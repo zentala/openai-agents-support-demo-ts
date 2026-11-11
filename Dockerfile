@@ -3,7 +3,8 @@ FROM node:22-bookworm-slim AS build
 ENV CI=true NEXT_TELEMETRY_DISABLED=1
 WORKDIR /src/app
 RUN corepack enable
-COPY app/package.json app/pnpm-lock.yaml ./
+# pnpm-workspace.yaml carries the build-script decisions; pnpm 11 in CI fails without them.
+COPY app/package.json app/pnpm-lock.yaml app/pnpm-workspace.yaml ./
 RUN corepack pnpm install --frozen-lockfile
 COPY app/ ./
 # The /readme route reads this file at runtime; the runner also copies it explicitly.
