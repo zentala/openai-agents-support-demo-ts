@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+}
+
+/* Look ported from the OpenAI CS agents demo: light grey page, white cards, blue accents. */
+body {
+  background: #f3f4f6;
+  color: #18181b;
+}
+
+/* Visible keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.bg-blue-600 :focus-visible { outline-color: white; outline-offset: -4px; }
+.workspace-content { padding: 1rem; }
+
+/* Keep the accepted 14px body / 12px metadata floor in the inspector and console. */
+[data-testid="workspace"] { font-size: 14px; }
+[data-testid="workspace"] button:disabled { cursor: not-allowed; }

@@ -1,0 +1,16 @@
+# One free single-process instance. Signed conversation cookies scope every public console request.
+services:
+  - type: web
+    name: openai-agents-support-demo
+    runtime: docker
+    plan: free
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: PUBLIC_DEMO
+        value: "true"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ALLOW_DEMO_RESET
+        value: "false"

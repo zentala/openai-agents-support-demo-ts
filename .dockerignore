@@ -1,0 +1,14 @@
+# Keep build context free of credentials, host caches and development/planning artifacts.
+.git
+.plan
+**/node_modules
+**/.next
+**/.cache
+**/.env*
+!app/.env.example
+examples
+research
+docs
+.agents
+.codex
+*.log
