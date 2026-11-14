@@ -27,6 +27,25 @@ customer's own page press Approve on its own refund.
 Option 2.
 
 - `create_refund` has `needsApproval` above `REFUND_APPROVAL_THRESHOLD` (default 500 PLN).
+- The owning consultant may include a private thread-specific instruction on hand-back; blank clears
+  previous guidance. It is stored outside the customer transcript and model-mutable memory, exposed only
+  through inspector/admin channels, and rehydrated from the live thread for fresh and resumed contexts.
+  Agent instructions treat it as subordinate to system policy and code rules. The output guardrail's
+  existing seven-consecutive-word prompt-overlap check also covers note prose; short ordinary words
+  do not become secrets. Independent secret and sensitive-data checks remain unchanged. Ratings/corrections
+  remain the exportable eval path for improvements to future conversations.
+- The consultant's first reply uses one `take_over_and_reply` action. Text length and current
+  ownership are checked before takeover or a customer message; an existing owner sends without
+  another join notice. Other consultants cannot take it over through the combined action.
+  The composer is keyed by conversation and consultant, with stale selected views hidden while
+  another conversation loads. All reply checks belong before the combined action's mutation boundary.
+- Both staff reply actions check a small Polish/English whole-word tone list on the server before
+  takeover or delivery. A warning creates a private, one-use acknowledgement bound to the thread,
+  consultant, reply action and exact validated text. Only explicit resend with that acknowledgement
+  can send the flagged text. Editing or changing the selected conversation/consultant clears the UI
+  acknowledgement; takeover/hand-back and successful delivery clear the server record. The existing
+  audit store records warning and acknowledged delivery without copying message text. This warns
+  rather than blocks, and is a simple vocabulary check, not model-based moderation.
 - The run is serialized and stored in `pending-runs.ts`. Resume uses
   `RunState.fromStringWithContext(agent, json, new RunContext(ctx))`, so the resumed run uses
   our context object and no private SDK field is read.

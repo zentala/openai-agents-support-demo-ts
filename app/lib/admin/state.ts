@@ -12,6 +12,7 @@ import { computeMetrics } from "./metrics";
 import type { AdminState, ThreadView } from "./types";
 import { canInspectThread } from "./visitor-access";
 import { isPublicDemo } from "@/lib/security/request-key";
+import { customerOrderOf } from "./customer-order";
 
 export const traceUrlFor = (traceId: string): string =>
   traceId ? `https://platform.openai.com/traces/trace?trace_id=${traceId}` : "https://platform.openai.com/traces";
@@ -64,6 +65,8 @@ export function buildThreadView(threadId: string, request?: Request): ThreadView
     traceUrl: traceUrlFor(thread.traceId),
     takeover: thread.takeover,
     transcript: thread.transcript,
+    staffInstruction: thread.staffInstruction,
+    customerOrder: customerOrderOf(thread),
     ratings,
   };
 }

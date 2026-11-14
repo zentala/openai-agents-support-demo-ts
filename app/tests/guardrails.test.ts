@@ -4,11 +4,32 @@ import { PROMPT_CANARY, PROMPT_TEXTS, SHARED_POLICY } from "@/lib/agents/prompts
 import { buildClassifierInput } from "@/lib/guardrails/input-guardrails";
 import { detectLeak } from "@/lib/guardrails/leak-detect";
 import { asData, unwrapData } from "@/lib/tools/helpers";
+import { RunContext } from "@openai/agents";
+import { triageAgent } from "@/lib/agents";
+import { leakGuardrail } from "@/lib/guardrails/leak-guardrail";
 
 const check = (answer: string, foreignSecrets: string[] = []) =>
   detectLeak({ answer, promptTexts: PROMPT_TEXTS, canary: PROMPT_CANARY, foreignSecrets });
 
 describe("detectLeak", () => {
+  it.each([
+    ["refund", "Your refund is in the consultant queue."],
+    ["delivery", "Delivery inside Poland takes 2-5 business days."],
+  ])("a short staff note %s does not turn shared vocabulary into a secret", async (text, agentOutput) => {
+    const context = new RunContext({ customerId: "c-anna", customerName: "Anna", threadId: "short-note-guardrail",
+      staffInstruction: { text, consultant: "Marta Nowak", updatedAt: "2026-11-11" } });
+    const result = await leakGuardrail.execute({ agentOutput, context, agent: triageAgent });
+    expect(result.tripwireTriggered).toBe(false);
+  });
+
+  it("still blocks a seven-word excerpt from a longer private staff note", async () => {
+    const context = new RunContext({ customerId: "c-anna", customerName: "Anna", threadId: "long-note-guardrail",
+      staffInstruction: { text: "Please ask for a clear package photo before offering any refund options.", consultant: "Marta Nowak", updatedAt: "2026-11-11" } });
+    const result = await leakGuardrail.execute({ agentOutput: "The note says ask for a clear package photo before offering.", context, agent: triageAgent });
+    expect(result.tripwireTriggered).toBe(true);
+    expect(JSON.stringify(result.outputInfo)).toContain("7+ consecutive words");
+  });
+
   it.each([
     ["zero-width space", "\u200b"], ["zero-width joiner", "\u200d"],
     ["bidi override", "\u202e"], ["BOM", "\ufeff"],

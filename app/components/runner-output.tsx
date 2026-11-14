@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * "Runner Output": the timeline of everything the run did, newest at the bottom.
+ * "Run log (all turns)": chronological events grouped by the cleaned customer message.
  * Click a row to expand the full arguments / result as JSON.
  */
-import { ArrowRightLeft, ClipboardList, Eraser, LayoutList, Library, Lock, MessageSquareMore, RefreshCw, Shield, ShieldAlert, UserRound, Wrench } from "lucide-react";
+import { ClipboardList, Eraser, LayoutList, Lock, MapPin, MessageSquareMore, RefreshCw, UserRound } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { AgentEvent } from "@/lib/types";
 import { PanelSection } from "./panel-section";
 import { Card, CardContent } from "./ui/card";
+import { runLogGroups, type RunLogGroup } from "@/lib/client/run-log";
+import { EventIcon, ProductIcon } from "./product-icon";
 
 const ICON = "h-4 w-4 text-zinc-600";
 
@@ -17,15 +19,15 @@ type Row = { label: string; icon: ReactNode; summary: string; detail?: unknown; 
 function toRow(e: AgentEvent): Row {
   switch (e.kind) {
     case "handoff":
-      return { label: "Handoff", icon: <ArrowRightLeft className={ICON} />, summary: `${e.from} -> ${e.to}` };
+      return { label: "Handoff", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.from} -> ${e.to}` };
     case "tool_call":
-      return { label: "Tool call", icon: <Wrench className={ICON} />, summary: `${e.tool}(${JSON.stringify(e.args)})`, detail: e.args };
+      return { label: "Tool call", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.tool}(${JSON.stringify(e.args)})`, detail: e.args };
     case "tool_output":
-      return { label: "Tool output", icon: <Wrench className={ICON} />, summary: `${e.tool}: ${JSON.stringify(e.result).slice(0, 140)}`, detail: e.result };
+      return { label: "Tool output", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.tool}: ${JSON.stringify(e.result).slice(0, 140)}`, detail: e.result };
     case "guardrail":
       return {
         label: `${e.stage} guardrail`,
-        icon: <Shield className={ICON} />,
+        icon: <EventIcon kind={e.kind} className={ICON} />,
         summary: `${e.name}: ${e.passed ? "passed" : "TRIPPED"} - ${e.reasoning}`,
         tone: e.passed ? undefined : "text-red-600",
       };
@@ -38,27 +40,27 @@ function toRow(e: AgentEvent): Row {
     case "widget":
       return { label: "Chat widget", icon: <LayoutList className={ICON} />, summary: e.widget.type === "order-picker" ? `${e.widget.type}: ${e.widget.orders.length} orders shown` : e.widget.type, detail: e.widget };
     case "address_change":
-      return { label: "Address change", icon: <ArrowRightLeft className={ICON} />, summary: `order #${e.orderId}: ${e.status}${e.detail ? ` - ${e.detail}` : ""}`, tone: e.status === "applied" ? "text-emerald-700" : undefined };
+      return { label: "Address change", icon: <MapPin aria-hidden="true" className={ICON} />, summary: `order #${e.orderId}: ${e.status}${e.detail ? ` - ${e.detail}` : ""}`, tone: e.status === "applied" ? "text-emerald-700" : undefined };
     case "verification":
-      return { label: "Guest verification", icon: <ShieldAlert className={ICON} />, summary: e.outcome === "verified" ? `verified as ${e.customerName}` : e.outcome === "locked" ? "LOCKED: too many failed attempts" : `failed, ${e.attemptsLeft} attempt(s) left`, tone: e.outcome === "verified" ? "text-emerald-700" : "text-amber-700" };
+      return { label: "Guest verification", icon: <UserRound aria-hidden="true" className={ICON} />, summary: e.outcome === "verified" ? `verified as ${e.customerName}` : e.outcome === "locked" ? "LOCKED: too many failed attempts" : `failed, ${e.attemptsLeft} attempt(s) left`, tone: e.outcome === "verified" ? "text-emerald-700" : "text-amber-700" };
     case "slots":
       return { label: "Form slots", icon: <ClipboardList className={ICON} />, summary: `${e.title}: ${e.slots.filter((s) => s.filled).length}/${e.slots.length} filled${e.outcome ? ` - ${e.outcome}` : ""}`, detail: e.slots };
     case "sensitive_stored":
       return { label: "Secure form", icon: <Lock className={ICON} />, summary: `${e.field} stored server-side: ${e.status} (the model never saw the value)`, tone: "text-emerald-700" };
     case "kb_hits":
-      return { label: "KB search", icon: <Library className={ICON} />, summary: `"${e.query}" -> ${e.hits.map((h) => h.id).join(", ") || "no hits"}`, detail: e.hits };
+      return { label: "KB search", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `"${e.query}" -> ${e.hits.map((h) => h.id).join(", ") || "no hits"}`, detail: e.hits };
     case "approval_request":
-      return { label: "Approval needed", icon: <ShieldAlert className={ICON} />, summary: e.approval.summary };
+      return { label: "Approval needed", icon: <EventIcon kind={e.kind} className={ICON} />, summary: e.approval.summary };
     case "approval_decision":
-      return { label: "Human decision", icon: <ShieldAlert className={ICON} />, summary: `${e.toolName}: ${e.approved ? "approved" : "rejected"} by ${e.decidedBy}` };
+      return { label: "Human decision", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.toolName}: ${e.approved ? "approved" : "rejected"} by ${e.decidedBy}` };
     case "escalation":
-      return { label: "Escalation", icon: <UserRound className={ICON} />, summary: `ticket ${e.ticketId} opened by ${e.source === "rule" ? "escalation rule" : "agent"}: ${e.reason}`, tone: "text-amber-700" };
+      return { label: "Escalation", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `ticket ${e.ticketId} opened by ${e.source === "rule" ? "escalation rule" : "agent"}: ${e.reason}`, tone: "text-amber-700" };
     case "takeover":
-      return { label: "Takeover", icon: <UserRound className={ICON} />, summary: e.note ?? (e.status === "human" ? `${e.consultant} took over` : `handed back to the agent by ${e.consultant}`) };
+      return { label: "Takeover", icon: <ProductIcon name={e.status === "human" ? "takeOver" : "handBack"} className={ICON} />, summary: e.note ?? (e.status === "human" ? `${e.consultant} took over` : `handed back to the agent by ${e.consultant}`) };
     case "chat_message":
-      return { label: "Pushed to chat", icon: <MessageSquareMore className={ICON} />, summary: `${e.author ?? e.role}: ${e.text.slice(0, 120)}` };
+      return { label: "Pushed to chat", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.author ?? e.role}: ${e.text.slice(0, 120)}` };
     case "error":
-      return { label: "Error", icon: null, summary: `${e.errorType}: ${e.message}`, tone: "text-red-600" };
+      return { label: "Error", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.errorType}: ${e.message}`, tone: "text-red-600" };
     default:
       return { label: e.kind, icon: null, summary: "" };
   }
@@ -90,19 +92,31 @@ function EventRow({ event }: { event: AgentEvent }) {
 }
 
 export function RunnerOutput({ events }: { events: AgentEvent[] }) {
+  const groups = runLogGroups(events);
   return (
-    <PanelSection title="Runner Output" icon={<MessageSquareMore className="h-4 w-4 text-blue-600" />} testId="runner-output">
+    <PanelSection title="Run log (all turns)" icon={<MessageSquareMore className="h-4 w-4 text-blue-600" />} testId="runner-output">
+      <p className="mb-3 text-sm text-zinc-700">Each turn starts with the cleaned customer message. Click an event for details.</p>
       <div className="max-h-96 space-y-2.5 overflow-y-auto rounded-md border border-gray-200 bg-gray-100 p-3 shadow-sm">
-        {events.length === 0 && <p className="p-4 text-center text-zinc-600">No runner events yet</p>}
-        {events.map((event) => (
+        {groups.length === 0 && <p className="p-4 text-center text-zinc-600">No run events yet</p>}
+        {groups.map((group) => <TurnGroup key={group.id} group={group} />)}
+      </div>
+    </PanelSection>
+  );
+}
+
+function TurnGroup({ group }: { group: RunLogGroup }) {
+  return <section data-testid="run-log-turn" data-turn={group.turn ?? "updates"} className="space-y-2.5">
+    <header className="space-y-1 pt-2 text-sm text-zinc-900">
+      <h3 className="font-semibold">{group.turn ? `Turn ${group.turn}` : "Conversation updates"}</h3>
+      {group.turn && <p data-testid="run-log-customer" className="whitespace-pre-wrap wrap-anywhere">{group.customerText ?? "Customer message pending"}</p>}
+    </header>
+    {group.events.map((event) => (
           <Card key={event.id}>
             <CardContent className="space-y-1 p-3">
               <span className="text-xs font-medium text-zinc-600">{agentOf(event)}</span>
               <EventRow event={event} />
             </CardContent>
           </Card>
-        ))}
-      </div>
-    </PanelSection>
-  );
+    ))}
+  </section>;
 }

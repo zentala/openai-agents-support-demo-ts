@@ -13,10 +13,12 @@ of the table below. Spec: [../docs/BUILD-v1.md](../docs/BUILD-v1.md).
 just setup      # install dependencies
 just dev        # http://127.0.0.1:3100 (needs OPENAI_API_KEY in the environment or in app/.env.local)
 just check      # typecheck + lint + unit tests (no network)
-just eval       # run all 38 scenarios against the real agents, print a table
+just eval       # run the current scenario catalog against the real agents, print a table
 ```
 
 Without `just`: `corepack pnpm dev`, `corepack pnpm test`, `corepack pnpm eval` inside this folder.
+
+The complete fixture list is the [generated scenario catalog](../README.md#scenario-catalog).
 
 ## How it works in 10 lines
 

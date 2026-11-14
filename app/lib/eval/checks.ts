@@ -2,6 +2,7 @@
  * Eval checks as a PURE function: observations in, list of failed expectations out.
  * Kept separate from the runner so it is unit-tested without any network.
  */
+import type { SenderInfo } from "@/lib/message-kinds";
 import type { AgentEvent } from "@/lib/types";
 import type { Expectation } from "./scenarios";
 
@@ -16,6 +17,10 @@ export type Observation = {
   failed?: string;
   /** Every answer of the conversation, oldest first (defaults to just `reply`). */
   replies?: string[];
+  /** The conversation's open ticket as the store holds it (real state, not an event). */
+  ticket?: { id: string; source: string; reason: string };
+  /** Transcript senders of the conversation, to see which lines code (not the model) wrote. */
+  transcript?: { sender?: SenderInfo }[];
 };
 
 const toolCalls = (events: AgentEvent[]): string[] =>
@@ -27,6 +32,17 @@ const refundsCreated = (events: AgentEvent[]): number =>
   ).length;
 
 const count = (events: AgentEvent[], predicate: (e: AgentEvent) => boolean): number => events.filter(predicate).length;
+
+/** Form/picker observations are distinct from optional customer Yes/No offers. */
+function checkWidgets(expect: Expectation, events: AgentEvent[], check: (ok: boolean, message: string) => void): void {
+  const shown = events.flatMap((event) => event.kind === "widget" ? [event.widget.type] : []);
+  if (expect.widgetShown !== undefined) check((shown.length > 0) === expect.widgetShown, `widgetShown should be ${expect.widgetShown}`);
+  for (const kind of expect.widgetsShown ?? []) check(shown.includes(kind), `widget ${kind} was not shown`);
+  for (const kind of expect.widgetsNotShown ?? []) check(!shown.includes(kind), `widget ${kind} must not be shown`);
+  if (expect.quickRepliesShown !== undefined) {
+    check(shown.includes("quick-replies") === expect.quickRepliesShown, `quickRepliesShown should be ${expect.quickRepliesShown}`);
+  }
+}
 
 /** Checks for the data-collection features (claims, guest verification, address change, secrets). */
 function checkWave3b(expect: Expectation, obs: Observation, check: (ok: boolean, message: string) => void): void {
@@ -52,6 +68,19 @@ function checkWave3b(expect: Expectation, obs: Observation, check: (ok: boolean,
       const questions = (reply.match(/\?/g) ?? []).length;
       check(questions <= max, `answer ${i + 1} asks ${questions} questions (max ${max})`);
     });
+  }
+}
+
+/** Ticket outcome read from store state: it holds whether the model or the code in the turn opened it. */
+function checkTicketState(expect: Expectation, obs: Observation, check: (ok: boolean, message: string) => void): void {
+  const { ticket } = obs;
+  if (expect.ticketOpened) {
+    const { source, reason } = expect.ticketOpened;
+    check(ticket?.source === source && ticket?.reason === reason, `open ticket should be ${source}/${reason}, got ${ticket ? `${ticket.source}/${ticket.reason}` : "none"}`);
+  }
+  if (expect.automaticStepShown !== undefined) {
+    const shown = !!ticket && (obs.transcript ?? []).some(({ sender }) => sender?.kind === "system" && !sender.notice && sender.ticketId === ticket.id);
+    check(shown === expect.automaticStepShown, `automatic step for the open ticket should be shown=${expect.automaticStepShown}`);
   }
 }
 
@@ -94,9 +123,8 @@ export function evaluate(expect: Expectation, obs: Observation): string[] {
   if (expect.ticketCreated !== undefined) {
     check(obs.events.some((e) => e.kind === "escalation") === expect.ticketCreated, `ticketCreated should be ${expect.ticketCreated}`);
   }
-  if (expect.widgetShown !== undefined) {
-    check(obs.events.some((e) => e.kind === "widget") === expect.widgetShown, `widgetShown should be ${expect.widgetShown}`);
-  }
+  checkTicketState(expect, obs, check);
+  checkWidgets(expect, obs.events, check);
   const changedFields = obs.events.flatMap((e) => (e.kind === "context_update" ? Object.keys(e.changes) : []));
   for (const field of expect.contextChanged ?? []) check(changedFields.includes(field), `context field ${field} was not updated`);
   checkWave3b(expect, obs, check);

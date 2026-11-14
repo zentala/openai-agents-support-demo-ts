@@ -6,6 +6,7 @@ import { z } from "zod";
 import { searchKb } from "@/lib/kb/search";
 import { emitAgentEvent } from "@/lib/runtime/event-bus";
 import { openTicket } from "@/lib/runtime/tickets";
+import { escalationNextStep } from "@/lib/escalation/notices";
 import type { SupportContext } from "@/lib/types";
 import { asData, sessionOf } from "./helpers";
 import { toolErrorHandler } from "./tool-error";
@@ -48,6 +49,13 @@ export const escalateToHuman = tool<z.ZodObject<{ summary: z.ZodString }>, Suppo
       source: "agent",
       reason: "agent_request",
     });
-    return asData("escalate_to_human", { status: created ? "TICKET_CREATED" : "TICKET_ALREADY_OPEN", ticketId: ticket.id });
+    return asData("escalate_to_human", {
+      status: created ? "TICKET_CREATED" : "TICKET_ALREADY_OPEN", ticketId: ticket.id,
+      queueStatus: "waiting_for_consultant",
+      // Customer-facing facts live here, not in the prompt: the leak guardrail blocks answers that repeat prompt text.
+      queueMeaning: "Opening a ticket puts the case in a queue; it does not mean a consultant has taken over yet.",
+      nextStep: escalationNextStep("en"),
+      outboundContactScheduled: false, responseTime: null,
+    });
   },
 });

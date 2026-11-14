@@ -10,6 +10,7 @@ import { OrderPicker } from "./order-picker";
 import { PhotoUpload } from "./photo-upload";
 import { SecureForm } from "./secure-form";
 import type { WidgetActions } from "./widget-actions";
+import { QuickReplies } from "./quick-replies";
 
 type Props = {
   widget: Widget;
@@ -24,6 +25,8 @@ type Props = {
 
 export function ChatWidget({ widget, active, idle, selectedOrderId, actions }: Props) {
   switch (widget.type) {
+    case "quick-replies":
+      return <QuickReplies widget={widget} active={active && idle} actions={actions} />;
     case "order-picker":
       return <OrderPicker widget={widget} selectedOrderId={selectedOrderId} active={active} onPick={actions.onPickOrder} />;
     case "secure-form":

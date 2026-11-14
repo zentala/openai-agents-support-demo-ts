@@ -8,10 +8,11 @@
 import { tool } from "@openai/agents";
 import { z } from "zod";
 import { CURRENCY } from "@/lib/config";
-import { findOrderForCustomer, listOrdersForCustomer, orderTotal, type Order } from "@/lib/data/store";
+import { currentAddress, findOrderForCustomer, listOrdersForCustomer, orderTotal, type Order } from "@/lib/data/store";
 import type { SupportContext } from "@/lib/types";
 import { asData, requireVerified, sessionOf } from "./helpers";
 import { toolErrorHandler } from "./tool-error";
+import { getThread } from "@/lib/runtime/threads";
 
 /** Only fields the agent needs; no internal ids. */
 const present = (order: Order) => ({
@@ -21,6 +22,9 @@ const present = (order: Order) => ({
   items: order.items,
   total: orderTotal(order),
   currency: CURRENCY,
+  // SECURITY: callers verify ownership before presenting the current delivery address.
+  address: currentAddress(order),
+  deliveryCountry: order.deliveryCountry,
   // Free text from a carrier or staff: untrusted. It reaches the model inside the DATA delimiters.
   note: order.note,
 });
@@ -37,9 +41,13 @@ export const getOrder = tool<z.ZodObject<{ orderId: z.ZodString }>, SupportConte
     const notVerified = requireVerified(session);
     if (notVerified) return notVerified;
     const { customerId } = session;
+    const thread = getThread(session.threadId);
     const order = findOrderForCustomer(customerId, orderId);
     // SECURITY: "not yours" and "does not exist" look identical (no order-id probing).
-    if (!order) return asData("get_order", { error: "ORDER_NOT_FOUND", orderId });
+    if (!order || (thread && thread.customerId !== customerId)) return asData("get_order", { error: "ORDER_NOT_FOUND", orderId });
+    // SECURITY: the canonical owned record binds both the live run and its persisted conversation.
+    session.activeOrderId = order.id;
+    if (thread) thread.memory.activeOrderId = order.id;
     return asData("get_order", present(order));
   },
 });

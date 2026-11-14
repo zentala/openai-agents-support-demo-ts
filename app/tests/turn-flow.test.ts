@@ -106,7 +106,7 @@ describe("escalation rules in the turn flow", () => {
     expect(ticket).toMatchObject({ source: "rule", reason: "legal_or_gdpr", threadId: ctx.threadId, customerId: "c-james" });
     expect(ticket?.traceId).toMatch(/^trace_/);
     expect(outcome.reply).toContain(ticket?.id);
-    expect(getThread(ctx.threadId)?.transcript.at(-1)).toMatchObject({ role: "agent", text: outcome.reply });
+    expect(getThread(ctx.threadId)?.transcript.at(-1)).toMatchObject({ role: "system", text: outcome.reply });
     expect(readEventLog().some((l) => l.event.kind === "escalation")).toBe(true);
   });
 
@@ -114,7 +114,7 @@ describe("escalation rules in the turn flow", () => {
     await handleUserMessage(ctx, "I want a human");
     const second = await handleUserMessage(ctx, "I said: a human!");
     expect(listTickets()).toHaveLength(1);
-    expect(second.reply).toContain("already with a human colleague");
+    expect(second.reply).toContain("already in the consultant queue");
   });
 
   it("two guardrail trips in one conversation escalate; one does not", async () => {

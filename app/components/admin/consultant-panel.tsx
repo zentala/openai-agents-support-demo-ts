@@ -79,14 +79,14 @@ function SelectedConversation({ c }: { c: AdminConsole }) {
   const { state, threadId } = c;
   const ticket = ticketForThread(state?.tickets ?? [], threadId);
   const selectedThreadId = c.thread?.threadId;
+  const selected = c.thread?.threadId === threadId ? c.thread : null;
   useEffect(() => {
     if (selectedThreadId && selectedThreadId === threadId) pane.current?.scrollIntoView({ block: "nearest" });
   }, [selectedThreadId, threadId]);
   return <div ref={pane}>
-    <ConversationPane thread={c.thread} ticketId={ticket?.status === "open" ? ticket.id : undefined} ticketNumber={ticket?.id} consultant={c.consultant} acting={c.acting}
-      onTakeOver={() => threadId && void c.act({ type: "take_over", threadId })}
-      onHandBack={() => threadId && void c.act({ type: "hand_back", threadId })}
-      onReply={(text) => threadId ? c.act({ type: "reply", threadId, text }) : Promise.resolve(false)}
-      onRate={(entryId, rating, correction) => threadId && void c.act({ type: "rate", threadId, entryId, rating, correction })} />
+    <ConversationPane key={`${threadId ?? "none"}:${c.consultant}`} thread={selected} ticketId={ticket?.status === "open" ? ticket.id : undefined} ticketNumber={ticket?.id} consultant={c.consultant} acting={c.acting}
+      onHandBack={(note) => selected ? c.act({ type: "hand_back", threadId: selected.threadId, note }) : Promise.resolve(false)}
+      onReply={(text, toneAcknowledgement) => selected ? c.perform({ type: "take_over_and_reply", threadId: selected.threadId, text, toneAcknowledgement }) : Promise.resolve({ ok: false, errorType: "NoConversation", message: "Select a conversation first." })}
+      onRate={(entryId, rating, correction) => selected && void c.act({ type: "rate", threadId: selected.threadId, entryId, rating, correction })} />
   </div>;
 }

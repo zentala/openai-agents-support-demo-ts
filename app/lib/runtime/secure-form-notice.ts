@@ -13,6 +13,8 @@ import { GUEST_ID, type SupportContext } from "@/lib/types";
 import type { NormalizedInput } from "@/lib/guardrails/normalize-input";
 import { emitAgentEvent } from "./event-bus";
 import type { RunOutcome } from "./run-support";
+import { customerMessages } from "./customer-messages";
+import { automaticStep } from "@/lib/message-kinds";
 
 const FORM_TOOL: Record<"iban" | "phone", string> = { iban: "request_bank_account", phone: "request_callback_phone" };
 
@@ -53,5 +55,6 @@ export function withSecureFormNotice(
     return useForm(ctx.language, WHAT[field]);
   });
   const paragraphs = [outcome.reply, ...new Set(notices)].filter(Boolean);
-  return { ...outcome, reply: paragraphs.join("\n\n") };
+  return { ...outcome, reply: paragraphs.join("\n\n"), messages: [...customerMessages(outcome),
+    ...[...new Set(notices)].map((text) => ({ text, sender: automaticStep("Use the secure form") }))] };
 }

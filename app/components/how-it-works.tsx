@@ -33,6 +33,9 @@ export function HowItWorks({ busy, onScenario }: { busy: boolean; onScenario: (s
         </div>
       </li>)}
     </ol>
+    <section className="border-t border-gray-200 pt-4"><h2 className="mb-2 text-base font-semibold">Consultant guidance and feedback</h2>
+      <p>Hand back can include a private note for the agent in this conversation. It guides the current case within the code-enforced rules. Ratings and corrections are feedback for future conversations: export them as eval scenarios to check later improvements.</p>
+    </section>
     <section className="border-t border-gray-200 pt-4"><h2 className="mb-2 text-base font-semibold">Security model</h2>
       <p>Identity comes from the server session; tools enforce ownership. Signed cookies protect conversations, and admin authentication protects inspector data and human actions. Sensitive forms bypass the model. This in-memory demo has no real customer login.</p>
       <a href="/readme#security" target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-10 items-center text-blue-700 underline">Read the security rules and demo limits in README</a>

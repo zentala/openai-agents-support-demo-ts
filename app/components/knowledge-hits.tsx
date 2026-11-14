@@ -7,27 +7,28 @@
 import { Library } from "lucide-react";
 import type { KbHit } from "@/lib/types";
 import { PanelSection } from "./panel-section";
-import { Card, CardContent } from "./ui/card";
+import { SourceChip } from "./kb-sources";
 
 export function KnowledgeHits({ groups }: { groups: { query: string; hits: KbHit[] }[] }) {
   return (
     <PanelSection title="Knowledge Base" icon={<Library className="h-4 w-4 text-blue-600" />} testId="kb-hits">
       {groups.length === 0 && <p className="text-sm text-zinc-600">No searches yet.</p>}
-      <div className="space-y-2">
+      <div className="space-y-4">
         {groups.map((group, i) => (
-          <Card key={i}>
-            <CardContent className="p-3">
-              <p className="mb-1 text-xs text-zinc-600">query: <span className="font-mono text-zinc-800">{group.query}</span></p>
-              {group.hits.length === 0 && <p className="text-xs italic text-zinc-600">no relevant article</p>}
-              {group.hits.map((hit) => (
-                <div key={hit.id} data-testid="kb-hit" data-article={hit.id} className="mt-1 text-xs">
-                  <span className="font-mono font-semibold text-blue-700">{hit.id}</span>{" "}
-                  <span className="text-zinc-600">score {hit.score}</span>
-                  <p className="line-clamp-2 text-zinc-700">{hit.snippet}</p>
+          <section key={i} aria-label={`Search: ${group.query}`} className="space-y-2">
+            <p className="wrap-anywhere text-sm text-zinc-600">Search: {group.query}</p>
+            {group.hits.length === 0 && <p className="text-sm text-zinc-600">No relevant article.</p>}
+            <ul className="space-y-3">{group.hits.map((hit) => (
+              <li key={hit.id} data-testid="kb-hit" data-article={hit.id} className="space-y-1">
+                <h3 className="wrap-anywhere text-sm font-semibold text-zinc-900">{hit.title}</h3>
+                <p className="line-clamp-1 wrap-anywhere text-sm text-zinc-700" title={hit.snippet}>{hit.snippet}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <SourceChip id={hit.id} />
+                  <span className="text-xs text-zinc-600">score {hit.score}</span>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </li>
+            ))}</ul>
+          </section>
         ))}
       </div>
     </PanelSection>

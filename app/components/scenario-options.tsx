@@ -4,7 +4,9 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useVisitorKey } from "./visitor-key";
 import { useCallback, useState } from "react";
-import { displayScenarioLabel, menuScenarios, SCENARIO_CATEGORIES, type Scenario } from "@/lib/eval/scenarios";
+import { displayScenarioLabel, type Scenario } from "@/lib/eval/scenarios";
+import { isRuleOnlyScenario, scenarioGroups } from "@/lib/client/scenario-catalog";
+import { ScenarioCategoryIcon } from "./scenario-category-icon";
 const itemClass = "min-h-10 cursor-pointer rounded-md px-3 py-2 text-sm outline-none hover:bg-blue-50 focus:bg-blue-50 data-[highlighted]:bg-blue-50 data-[disabled]:opacity-50";
 
 export function ScenarioOptions({ busy, onRun, onReset }: { busy: boolean; onRun: (scenario: Scenario) => void; onReset: () => void }) {
@@ -26,9 +28,11 @@ export function ScenarioOptions({ busy, onRun, onReset }: { busy: boolean; onRun
   }, [measure]);
   return <div className="relative" style={{ maxHeight: "inherit" }}>
     <div data-testid="scenario-scroll" ref={observe} onScroll={(e) => measure(e.currentTarget)} className="overflow-y-auto p-2" style={{ maxHeight: "inherit" }}>
-      {SCENARIO_CATEGORIES.map((category, index) => <Menu.Group key={category} aria-label={category}>
-        <Menu.Label className={`px-3 pb-2 pt-3 text-[13px] font-semibold text-zinc-800 ${index > 0 ? "mt-3 border-t border-gray-300" : ""}`}>{category}</Menu.Label>
-        {menuScenarios.filter((s) => s.category === category).map((scenario) => <Menu.Item key={scenario.id} data-testid={`scenario-${scenario.id}`} disabled={busy} onSelect={() => onRun(scenario)} className={itemClass}>{displayScenarioLabel(scenario.label)}</Menu.Item>)}
+      {scenarioGroups.map(({ category, scenarios }, index) => <Menu.Group key={category} aria-label={category}>
+        <Menu.Label className={`flex items-center gap-2 px-3 pb-2 pt-3 text-sm font-semibold text-zinc-800 ${index > 0 ? "mt-3 border-t border-gray-300" : ""}`}><ScenarioCategoryIcon category={category} />{category}</Menu.Label>
+        {scenarios.map((scenario) => <Menu.Item key={scenario.id} data-testid={`scenario-${scenario.id}`} disabled={busy} onSelect={() => onRun(scenario)} className={itemClass}>
+          {displayScenarioLabel(scenario.label)}{isRuleOnlyScenario(scenario) && <span className="ml-2 text-xs text-zinc-600">No AI needed</span>}
+        </Menu.Item>)}
       </Menu.Group>)}
       {allowReset && <><Menu.Separator className="my-2 h-px bg-gray-200" />
       <Menu.Item disabled={busy} onSelect={onReset} className={itemClass} data-testid="reset-demo-data">Reset demo data</Menu.Item></>}

@@ -9,6 +9,7 @@
  * is `aria-pressed`, and orders the refund rules would refuse say why instead of just being dimmed.
  */
 import type { OrderPickerWidget } from "@/lib/types";
+import { ProductThumbnail } from "./product-thumbnail";
 
 type Props = {
   widget: OrderPickerWidget;
@@ -40,15 +41,17 @@ export function OrderPicker({ widget, selectedOrderId, active, onPick }: Props) 
                 disabled={!active}
                 title={order.note}
                 onClick={() => onPick(order.orderId, `I pick order #${order.orderId} (${order.summary}, ${order.total} ${order.currency}).`)}
-                className={`w-full rounded-md border px-3 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-default ${
+                className={`flex w-full items-start gap-3 rounded-md border px-3 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-default ${
                   selected ? "border-blue-600 bg-blue-50" : "border-gray-300 bg-white enabled:hover:bg-blue-50"
                 } ${order.eligible ? "" : "opacity-70"}`}
               >
-                <span className="font-medium">#{order.orderId}</span> <span>{order.summary}</span>
+                <span className="flex shrink-0 flex-col gap-2">{(order.productNames?.length ? order.productNames : [""]).map((name, index) => <ProductThumbnail key={`${name}:${index}`} name={name} />)}</span>
+                <span className="min-w-0 wrap-anywhere"><span className="font-medium">#{order.orderId}</span> <span>{order.summary}</span>
                 <span className="block text-xs text-zinc-600">
                   {order.total} {order.currency} - {order.status}
                 </span>
                 {order.note && <span className="block text-xs text-red-600">{order.note}</span>}
+                </span>
               </button>
             </li>
           );

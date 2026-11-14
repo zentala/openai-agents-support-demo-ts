@@ -4,6 +4,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import type { KbArticle } from "@/lib/types";
 
 export type KbChunk = { id: string; title: string; text: string };
 
@@ -27,13 +28,20 @@ export const chunkBody = (body: string): string[] =>
   body.split(/\n\s*\n/).map((part) => part.replace(/\s+/g, " ").trim()).filter(Boolean);
 
 let cache: KbChunk[] | undefined;
+let articles: KbArticle[] | undefined;
+
+/** Public policy files only; browser-provided citation IDs never become filesystem paths. */
+export function loadKbArticles(): KbArticle[] {
+  return articles ??= readdirSync(KB_DIR)
+    .filter((file) => file.endsWith(".md"))
+    .sort()
+    .map((file) => parseArticle(readFileSync(path.join(KB_DIR, file), "utf8")));
+}
 
 export function loadKbChunks(): KbChunk[] {
   if (cache) return cache;
-  cache = readdirSync(KB_DIR)
-    .filter((file) => file.endsWith(".md"))
-    .flatMap((file) => {
-      const { id, title, body } = parseArticle(readFileSync(path.join(KB_DIR, file), "utf8"));
+  cache = loadKbArticles()
+    .flatMap(({ id, title, body }) => {
       return chunkBody(body).map((text) => ({ id, title, text }));
     });
   return cache;

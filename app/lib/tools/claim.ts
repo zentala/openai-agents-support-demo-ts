@@ -20,10 +20,11 @@ import { missingRequired, nextSlot } from "@/lib/slots/slots";
 import type { ClaimDraft, SupportContext } from "@/lib/types";
 import { asData, requireVerified, sessionOf } from "./helpers";
 import { toolErrorHandler } from "./tool-error";
+import { getThread } from "@/lib/runtime/threads";
 
 const updateParameters = z.object({
   orderId: z.string().nullable().describe("Order number if the customer named it, else null"),
-  item: z.string().nullable().describe("The damaged item, named as in the order, else null"),
+  item: z.string().nullable().describe("Exact catalog item name from the owned order, never a translation. Use null for a one-item order: code fills its canonical item."),
   damage: z.string().nullable().describe("The customer's own description of the damage, else null"),
   noticedAt: z.string().nullable().describe("Date the customer noticed the damage, as YYYY-MM-DD, else null"),
 });
@@ -73,11 +74,16 @@ export const requestClaimPhoto = tool<z.ZodObject<Record<string, never>>, Suppor
     const notVerified = requireVerified(session);
     if (notVerified) return notVerified;
     if (!draftOf(session).orderId) return asData("request_claim_photo", { status: "NO_CLAIM_ORDER", instruction: "Collect the order first with update_claim." });
+    const thread = getThread(session.threadId);
+    const declined = /\b(?:no photo|without (?:a )?photo|kein\p{L}* foto|ohne foto|bez zdj[eę]cia)\b/iu.test(session.customerMessage ?? "");
+    if (declined || thread?.claimPhotoOffered) return asData("request_claim_photo", { status: declined ? "PHOTO_DECLINED" : "PHOTO_ALREADY_OFFERED",
+      instruction: "Do not ask for a photo again. Summarize the complete claim; if the customer already confirmed the summary, call submit_claim now. Otherwise ask for confirmation." });
+    if (thread) thread.claimPhotoOffered = true;
     emitAgentEvent(session.threadId, {
       kind: "widget",
       widget: { type: "photo-upload", prompt: "Attach a photo of the damage (optional)", maxBytes: MAX_PHOTO_BYTES, acceptedTypes: [...ACCEPTED_PHOTO_TYPES] },
     });
-    return asData("request_claim_photo", { status: "UPLOAD_CARD_SHOWN", instruction: "Write one short sentence: the photo is optional, they can attach it or say to continue without. Then stop." });
+    return asData("request_claim_photo", { status: "UPLOAD_CARD_SHOWN", instruction: "The photo is optional. Summarize the complete claim and ask one confirmation question; allow continuing without a photo. If the summary was already confirmed, call submit_claim instead of asking again." });
   },
 });
 
@@ -108,6 +114,8 @@ export const submitClaim = tool<z.ZodObject<Record<string, never>>, SupportConte
       return asData("submit_claim", { status: "REFUSED", code: "PHOTO_NOT_FOUND", message: "The attached photo is not available." });
     }
     const record = addClaim({ customerId: session.customerId, ...claim });
+    const thread = getThread(session.threadId);
+    if (thread) delete thread.claimPhotoOffered;
     session.claimDraft = undefined;
     publishClaimSlots(session.threadId, draft, `Claim ${record.id} created`);
     return asData("submit_claim", { status: "CLAIM_CREATED", claimId: record.id, orderId: record.orderId, photoAttached: Boolean(record.photoId) });

@@ -9,12 +9,12 @@ describe("toChatMessage", () => {
   it("a consultant line carries a sender part with the consultant name", () => {
     const message = toChatMessage({ id: "1", ts: 0, kind: "chat_message", entryId: "e1", role: "consultant", text: "Hi", author: "Marta Nowak" });
     expect(message).toMatchObject({ id: "e1", role: "assistant" });
-    expect(message.parts).toEqual([{ type: "text", text: "Hi" }, { type: "data-sender", data: { kind: "consultant", name: "Marta Nowak" } }]);
+    expect(message.parts).toEqual([{ type: "text", text: "Hi" }, { type: "data-sender", data: { kind: "human", name: "Marta Nowak" } }]);
   });
 
   it("an agent line is a plain assistant message", () => {
     const message = toChatMessage({ id: "1", ts: 0, kind: "chat_message", entryId: "e2", role: "agent", text: "Done" });
-    expect(message.parts).toEqual([{ type: "text", text: "Done" }]);
+    expect(message.parts).toEqual([{ type: "text", text: "Done" }, { type: "data-sender", data: { kind: "ai" } }]);
   });
 });
 

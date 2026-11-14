@@ -25,6 +25,9 @@ import { THREAD_ID_PATTERN } from "@/lib/security/thread-credential";
 import { withRequestKey } from "@/lib/security/request-key";
 import { publicRateLimit } from "@/lib/security/public-rate-limit";
 import type { ChatWidget, SupportUIMessage } from "@/lib/types";
+import { customerMessages } from "@/lib/runtime/customer-messages";
+import { addTranscript } from "@/lib/runtime/threads";
+import { automaticStep } from "@/lib/message-kinds";
 
 export const maxDuration = 120;
 
@@ -36,6 +39,7 @@ const bodySchema = z.object({
     .discriminatedUnion("type", [
       z.object({ type: z.literal("order"), orderId: z.string().max(40) }),
       z.object({ type: z.literal("address"), orderId: z.string().max(40), proposalId: z.string().uuid(), decision: z.enum(["confirm", "cancel"]) }),
+      z.object({ type: z.literal("quick-reply"), offerId: z.string().uuid(), decision: z.enum(["yes", "no"]) }),
     ])
     .optional(),
 });
@@ -78,6 +82,7 @@ export async function POST(req: Request) {
         // While a consultant is in charge the agent stays silent: there is no text to stream.
         // The customer sees the consultant's reply through the thread channel instead.
         if (!outcome.handledByHuman) {
+          writer.write({ type: "data-messages", data: customerMessages(outcome) });
           // A text part is start -> delta(s) -> end, all with the same id.
           const id = crypto.randomUUID();
           writer.write({ type: "text-start", id });
@@ -86,6 +91,15 @@ export async function POST(req: Request) {
         }
         // Not transient: a widget is part of the conversation, so it is stored in the message and rendered by the browser.
         widgets.forEach((widget) => writer.write({ type: "data-widget", data: widget }));
+      } catch (error) {
+        const described = describeError(error);
+        const sender = automaticStep("Request failed");
+        addTranscript(access.thread, { role: "system", text: described.chatSentence, sender });
+        writer.write({ type: "data-messages", data: [{ text: described.chatSentence, sender }] });
+        const id = crypto.randomUUID();
+        writer.write({ type: "text-start", id });
+        writer.write({ type: "text-delta", id, delta: described.chatSentence });
+        writer.write({ type: "text-end", id });
       } finally {
         unsubscribe();
       }

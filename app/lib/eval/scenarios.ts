@@ -10,7 +10,8 @@ import { z } from "zod";
 import raw from "@/data/scenarios.json";
 
 const names = z.array(z.string());
-export const SCENARIO_CATEGORIES = ["Basics", "Security & guardrails", "Refunds & approvals", "Human handoff", "Data collection", "Guest mode"] as const;
+const formWidgetKinds = z.array(z.enum(["order-picker", "secure-form", "photo-upload", "address-confirm"]));
+export const SCENARIO_CATEGORIES = ["Orders", "Knowledge", "Languages", "Address changes", "Security & guardrails", "Refunds & approvals", "Human handoff", "Data collection", "Guest mode"] as const;
 
 export const expectSchema = z
   .object({
@@ -37,8 +38,18 @@ export const expectSchema = z
     toolResultIncludes: names,
     /** An escalation ticket was opened (by the agent's tool or by the escalation rules). */
     ticketCreated: z.boolean(),
-    /** The Orders agent showed the clickable order picker in the chat. */
+    /** The conversation has an OPEN ticket in the store with this source and reason (who opened it: tool = "agent", code = "rule"). */
+    ticketOpened: z.object({ source: z.enum(["agent", "rule"]), reason: z.string() }),
+    /** The transcript holds an automatic-step line (code-written, not the model) that names the open ticket. */
+    automaticStepShown: z.boolean(),
+    /** Legacy presence of any widget; use typed checks for a particular form or picker. */
     widgetShown: z.boolean(),
+    /** Every named form/picker kind must appear; a Yes/No offer cannot satisfy this. */
+    widgetsShown: formWidgetKinds,
+    /** None of these kinds may appear; unrelated widgets remain allowed. */
+    widgetsNotShown: formWidgetKinds,
+    /** At least one explicit server-owned Yes/No offer was published, not inferred from answer text. */
+    quickRepliesShown: z.boolean(),
     /** These run-context fields appear in a `context_update` event (e.g. set by the handoff hook). */
     contextChanged: names,
     /** Exactly this many damage claims were created (submit_claim returned CLAIM_CREATED). */
@@ -68,11 +79,13 @@ export const scenarioSchema = z.object({
   /** Later customer turns of the same conversation. */
   followUps: z.array(z.string()).optional(),
   customerId: z.string(),
+  /** Staff-only fixture applied through takeover/hand-back before the first turn, never a chat input. */
+  staffNote: z.string().max(2000).optional(),
   /**
    * Refunds that already exist when the conversation starts (eval only). They let a single turn test a
    * rule that depends on earlier money movements, without relying on what the model remembers.
    */
-  seedRefunds: z.array(z.object({ orderId: z.string(), amount: z.number().positive() })).optional(),
+  seedRefunds: z.array(z.object({ orderId: z.string(), amount: z.number().positive(), status: z.enum(["pending_payout", "paid"]).optional() })).optional(),
   /** Values already in the secure vault when the conversation starts (eval only), as if the customer had used the form. */
   seedSecrets: z.array(z.object({ field: z.enum(["iban", "phone"]), value: z.string() })).optional(),
   /** What a good answer says, written by a consultant. For humans and LLM judges; not machine-checked. */
@@ -88,6 +101,6 @@ export const fillTemplates = (text: string): string => text.replaceAll("{{today}
 
 export const scenarios: Scenario[] = z.array(scenarioSchema).parse(raw);
 /** Seeded fixtures require server state and remain eval-only. */
-export const menuScenarios = scenarios.filter((s) => !s.seedRefunds && !s.seedSecrets);
+export const menuScenarios = scenarios.filter((s) => !s.seedRefunds && !s.seedSecrets && !s.staffNote);
 /** Fixture numbers stay stable for evals; the UI presents meaningful names without list numbering. */
 export const displayScenarioLabel = (label: string): string => label.replace(/^\d+\s+/, "");

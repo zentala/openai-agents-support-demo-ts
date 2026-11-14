@@ -15,7 +15,7 @@ const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
 const { handleUserMessage } = await import("@/lib/runtime/turn");
 
-const none: AddressFields = { orderId: null, street: null, city: null, postalCode: null };
+const none: AddressFields = { orderId: null, street: null, city: null, postalCode: null, country: null };
 const NEW = { street: "22 Elm Street", city: "Manchester", postalCode: "M1 4BT" };
 const confirm = () => ({ type: "address", orderId: "1004", proposalId: thread.pendingAddress?.proposalId ?? "missing-proposal", decision: "confirm" } as const);
 const cancel = () => ({ ...confirm(), decision: "cancel" } as const);
@@ -94,6 +94,22 @@ describe("update_address_change: one question at a time, then a proposal - never
 });
 
 describe("only the Confirm click applies the change", () => {
+  it.each([
+    ["pl", "Nie mogłem zmienić adresu: Kod pocztowy nie pasuje do kraju dostawy zamówienia. Czy chcesz, żebym przekazał sprawę konsultantowi?"],
+    ["en", "I could not change the address: The postal code must match GB's format; delivery cannot move to another country. Would you like me to pass this to a consultant?"],
+    ["de", "Die Adresse konnte nicht geändert werden: Die Postleitzahl passt nicht zum Lieferland dieser Bestellung. Soll ich das an einen Kundenberater weitergeben?"],
+  ])("Confirm returns and stores a real localized offer in %s for an invalid proposal", async (language, expected) => {
+    await propose();
+    ctx.language = language;
+    thread.pendingAddress!.newAddress.postalCode = "02-347";
+    const outcome = await handleUserMessage(ctx, "confirm", confirm());
+    expect(outcome.reply).toBe(expected);
+    expect(outcome.reply).not.toMatch(/offer escalation|collect a valid address|ask the customer/i);
+    expect(thread.transcript.at(-1)).toMatchObject({ role: "system", text: expected });
+    expect(model.run).not.toHaveBeenCalled();
+    expect(currentAddress(order1004())).toEqual(order1004().address);
+  });
+
   it("typing 'yes, confirm' in the chat changes nothing", async () => {
     await propose();
     await handleUserMessage(ctx, "Yes, please confirm the new address now.");
@@ -109,7 +125,12 @@ describe("only the Confirm click applies the change", () => {
     expect(outcome.reply).toContain("22 Elm Street, M1 4BT Manchester");
     expect(thread.pendingAddress).toBeUndefined();
     expect(events.find((e) => e.kind === "address_change" && e.status === "applied")).toBeDefined();
-    expect(thread.transcript.at(-1)).toMatchObject({ role: "agent" });
+    const saved = events.filter((e) => e.kind === "slots").at(-1);
+    expect(saved).toMatchObject({ outcome: "Saved · Order #1004 address changed" });
+    if (saved?.kind !== "slots") throw new Error("Missing saved slot event");
+    expect(saved.slots.every((slot) => slot.filled)).toBe(true);
+    expect(saved.slots.find((slot) => slot.key === "street")?.value).toBe(NEW.street);
+    expect(thread.transcript.at(-1)).toMatchObject({ role: "system" });
   });
 
   it("Cancel keeps the old address", async () => {

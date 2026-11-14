@@ -10,19 +10,27 @@ type Language = "pl" | "en" | "de";
 export const pick = (language: string | undefined, texts: Record<Language, string>): string =>
   texts[language === "pl" || language === "de" ? language : "en"];
 
+/** A capability, not a promised response or a scheduled outbound contact. */
+export const escalationNextStep = (language: string | undefined): string =>
+  pick(language, {
+    pl: "Konsultant może przejąć tę rozmowę i odpowiedzieć tutaj. Możesz zostawić ten czat otwarty.",
+    en: "A consultant can take over this conversation and reply here. You can keep this chat open.",
+    de: "Ein Mitarbeiter kann dieses Gespräch übernehmen und hier antworten. Sie können diesen Chat geöffnet lassen.",
+  });
+
 export const escalationNotice = (language: string | undefined, ticketId: string): string =>
   pick(language, {
-    pl: `Przekazałem Twoją sprawę konsultantowi (zgłoszenie ${ticketId}). Skontaktuje się z Tobą tak szybko, jak to możliwe.`,
-    en: `I have passed your case to a human colleague (ticket ${ticketId}). They will contact you as soon as possible.`,
-    de: `Ich habe Ihr Anliegen an einen Mitarbeiter weitergeleitet (Ticket ${ticketId}). Er meldet sich so bald wie möglich.`,
-  });
+    pl: `Twoja sprawa jest w kolejce konsultanta (zgłoszenie ${ticketId}).`,
+    en: `Your case is in the consultant queue (ticket ${ticketId}).`,
+    de: `Ihr Anliegen steht in der Warteschlange für einen Mitarbeiter (Ticket ${ticketId}).`,
+  }) + ` ${escalationNextStep(language)}`;
 
 export const alreadyEscalatedNotice = (language: string | undefined, ticketId: string): string =>
   pick(language, {
-    pl: `Twoja sprawa jest już u konsultanta (zgłoszenie ${ticketId}). Odezwie się do Ciebie.`,
-    en: `Your case is already with a human colleague (ticket ${ticketId}). They will get back to you.`,
-    de: `Ihr Anliegen liegt bereits bei einem Mitarbeiter (Ticket ${ticketId}). Er meldet sich bei Ihnen.`,
-  });
+    pl: `Twoja sprawa jest już w kolejce konsultanta (zgłoszenie ${ticketId}).`,
+    en: `Your case is already in the consultant queue (ticket ${ticketId}).`,
+    de: `Ihr Anliegen steht bereits in der Warteschlange für einen Mitarbeiter (Ticket ${ticketId}).`,
+  }) + ` ${escalationNextStep(language)}`;
 
 export const joinedNotice = (language: string | undefined, consultant: string): string =>
   pick(language, {

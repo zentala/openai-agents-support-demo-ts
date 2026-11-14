@@ -6,7 +6,7 @@ A multi-agent support desk on the OpenAI Agents SDK for JS where you can inspect
 
 ![A customer asks for a human; a consultant opens the ticket, takes over and replies](docs/media/support-demo.gif)
 
-[Watch the WebM](docs/media/support-demo.webm) · [Run locally](#quick-start) · [Read the architecture](.plan/ARCH.md)
+[Watch the WebM](docs/media/support-demo.webm) · [Media sources](docs/media/README.md) · [Run locally](#quick-start) · [Read the architecture](.plan/ARCH.md)
 
 ## Inspired by the OpenAI demo
 
@@ -14,15 +14,200 @@ Inspired by [openai/openai-cs-agents-demo](https://github.com/openai/openai-cs-a
 
 This version uses TypeScript end to end: the OpenAI Agents SDK for JS, Vercel AI SDK chat and one Next.js process. It adds human approvals and a consultant console, code-enforced business rules, secure forms, guest verification, evals and browser smoke checks. The code is written to be read: TSDoc explains each module; `// SECURITY:` marks trust decisions and `// INTERVIEW:` marks teaching points.
 
-## Feature tour
+## Capabilities
 
-- **Inspect a turn.** Follow cleanup, guardrails, handoffs, tool calls and replies; expand the full runner log when needed. Knowledge-base hits show where policy answers came from.
-- **Approve a refund.** Requests above 500 PLN pause with saved run state. A consultant approves or rejects; the decision is audited and the agent resumes. Customer chat cannot approve its own refund.
-- **Take over.** Explicit human requests and legal/GDPR wording open tickets in code. A consultant can reply, hand back, rate an answer and export corrections as eval scenarios.
-- **Keep rules outside the prompt.** Tools enforce session identity, ownership, amount limits and the 30-day return window. Address changes require a fresh Confirm click; claims require complete validated fields.
-- **Collect data through widgets.** Order picker, secure IBAN/phone form, photo upload and address confirmation. Secure-form values go directly to the server; the model receives a status.
-- **Verify guests.** Order number and required e-mail verification precede access to order data; attempt limits and non-disclosing failures live in code.
-- **Measure behavior.** One scenario file drives the demo actions and 38 real-model evals. Offline tests cover business rules; no-model browser smoke covers layout, keyboard controls, takeover and error recovery.
+Explore a furniture-shop support conversation from the customer chat and the Agent View, then open the Consultant tab when a person needs to decide or reply. The start screen and Scenarios menu share the runnable examples. Multi-step stories suggest an editable next customer message; Send remains your choice.
+
+### Scenario catalog
+
+Choose a UI example to start a fresh conversation, or pass stable IDs to `just eval` to check real-model behavior. Evals need an API key and incur provider costs. Some fixtures require pre-existing synthetic state and appear only in the eval catalog. The table includes those fixtures without exposing their setup values.
+
+<!-- scenarios:generated:start -->
+
+All 49 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
+
+Steps count customer messages. Widget clicks and consultant decisions are additional actions. UI + eval examples appear in the start screen and Scenarios menu; eval-only examples require fixture setup.
+
+<details>
+<summary>Address changes (4)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Change a delivery address and confirm | `address-change-confirm` | 3 | UI + eval |
+| Try changing a delivered order's address | `address-delivered-refused` | 1 | UI + eval |
+| Try an address with the wrong postcode format | `address-country-postcode-refused` | 1 | UI + eval |
+| Try changing delivery to another country | `address-country-change-refused` | 1 | UI + eval |
+
+</details>
+
+<details>
+<summary>Data collection (4)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Report damage over several messages | `claim-slot-filling` | 4 | UI + eval |
+| Try to file an incomplete damage claim | `claim-premature-submit` | 1 | UI + eval |
+| Type a bank account in chat | `iban-typed-in-chat` | 1 | UI + eval |
+| Report damage, approve a refund, then ask for a person | `damage-refund-human` | 4 | UI + eval |
+
+</details>
+
+<details>
+<summary>Guest mode (3)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Verify as a guest, then ask about my order | `guest-verify-success` | 2 | UI + eval |
+| Ask about an order before verification | `guest-no-data-before-verify` | 1 | UI + eval |
+| Try incorrect guest verification details | `guest-verify-lockout` | 4 | UI + eval |
+
+</details>
+
+<details>
+<summary>Human handoff (8)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Ask for a person while upset | `angry-customer` | 1 | UI + eval |
+| Talk to a person | `human-request` | 1 | UI + eval |
+| Ask to delete my personal data | `gdpr-delete` | 1 | UI + eval |
+| Escalate a legal complaint | `legal-threat` | 1 | UI + eval |
+| Try two requests that trip guardrails | `double-guardrail-trip` | 2 | UI + eval |
+| Complain without asking for a person | `angry-no-keywords` | 1 | UI + eval |
+| Ask what happens after escalation | `escalation-next-step` | 1 | UI + eval |
+| Follow a consultant's private note | `staff-handback-context` | 1 | Eval only (fixture setup) |
+
+</details>
+
+<details>
+<summary>Knowledge (4)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Ask a question outside the knowledge base | `kb-unknown` | 1 | UI + eval |
+| Unknown answer, then accept escalation | `kb-unknown-yes` | 2 | UI + eval |
+| Unknown answer, then offer a person | `kb-unknown-offers-escalation` | 1 | UI + eval |
+| Unknown answer, then decline escalation | `escalation-offer-declined` | 2 | UI + eval |
+
+</details>
+
+<details>
+<summary>Languages (2)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Ask about returns in German | `german-returns` | 1 | UI + eval |
+| Switch the conversation language | `language-switch` | 2 | UI + eval |
+
+</details>
+
+<details>
+<summary>Orders (4)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Ask about an order from an email | `iphone-signature` | 1 | UI + eval |
+| Choose from my orders | `order-picker` | 1 | UI + eval |
+| Keep the selected order during handoff | `handoff-context` | 1 | UI + eval |
+| Read my current delivery address | `order-delivery-address` | 1 | UI + eval |
+
+</details>
+
+<details>
+<summary>Refunds &amp; approvals (12)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Return a chair within the deadline | `refund-in-policy` | 1 | UI + eval |
+| Request a refund that needs approval | `refund-over-threshold` | 3 | UI + eval |
+| Try a return after the deadline | `refund-expired` | 1 | UI + eval |
+| A consultant refuses the refund | `refund-rejected` | 1 | UI + eval |
+| Try to refund an already refunded order | `refund-already-refunded` | 1 | Eval only (fixture setup) |
+| Request more than the remaining refund | `refund-over-remaining` | 2 | UI + eval |
+| Refund a cash-on-delivery order | `cod-refund-needs-iban` | 1 | UI + eval |
+| Refund to a saved bank account | `cod-refund-with-iban` | 1 | Eval only (fixture setup) |
+| Create a refund, cancel it, then cancel again | `refund-cancel-repeat` | 3 | UI + eval |
+| Try cancelling a paid refund | `refund-cancel-paid-refused` | 1 | Eval only (fixture setup) |
+| Review refund details, then confirm | `refund-confirmation-choices` | 2 | UI + eval |
+| Review refund details, then decline | `refund-confirmation-declined` | 2 | UI + eval |
+
+</details>
+
+<details>
+<summary>Security &amp; guardrails (8)</summary>
+
+| Scenario | Stable ID | Steps | Availability |
+| --- | --- | --- | --- |
+| Ask the assistant to ignore its rules | `injection-direct` | 1 | UI + eval |
+| Hide instructions in a delivery question | `injection-hidden` | 1 | UI + eval |
+| Ask about someone else's order | `foreign-order` | 1 | UI + eval |
+| Ask to see the assistant's instructions | `prompt-extraction` | 1 | UI + eval |
+| Ask an unrelated question | `off-topic` | 1 | UI + eval |
+| Type a card number in chat | `card-number` | 1 | UI + eval |
+| Ask for a relative's order | `social-engineering` | 1 | UI + eval |
+| Read an order note containing hidden instructions | `injection-order-note` | 1 | UI + eval |
+
+</details>
+
+<!-- scenarios:generated:end -->
+
+<details>
+<summary>Maintain the scenario catalog</summary>
+
+Edit [scenarios.json](app/data/scenarios.json), then run:
+
+```sh
+node scripts/generate-readme-scenarios.mjs --write
+```
+
+Review the README diff. `just check` runs the same generator with `--check` and fails if the catalog is stale; check mode never rewrites README. The generator uses all fixtures, including examples that need eval-only setup.
+
+</details>
+
+### Guardrails and business rules
+
+The model proposes actions. Tool and runtime code enforce access and business rules. The following source map shows where each layer runs and what it constrains.
+
+<details>
+<summary>Open the guardrail and code-rule source map</summary>
+
+| Layer | What it stops or constrains | Source |
+| --- | --- | --- |
+| Input cleanup | Removes recognized mail signatures, quoted lines and invisible characters; caps the text passed to inference. | [normalize-input.ts](app/lib/guardrails/normalize-input.ts), [config.ts](app/lib/config.ts) |
+| Jailbreak classifier | Flags attempts to override instructions, extract the prompt or request disallowed actions. Classification is probabilistic. | [input-guardrails.ts](app/lib/guardrails/input-guardrails.ts) |
+| Relevance classifier | Flags unrelated requests while using conversation context to interpret short replies. Classification is probabilistic. | [input-guardrails.ts](app/lib/guardrails/input-guardrails.ts) |
+| Output leak detection | Blocks the configured canary, matching prompt/private-note excerpts, foreign fixture strings and supported sensitive-number patterns. | [leak-detect.ts](app/lib/guardrails/leak-detect.ts), [leak-guardrail.ts](app/lib/guardrails/leak-guardrail.ts) |
+| Masking and secure forms | Masks recognized cards, IBANs and phones before model input/events. Secure forms validate supported values and store them in the server vault; tools use their status. | [pii.ts](app/lib/guardrails/pii.ts), [mask.ts](app/lib/sensitive/mask.ts), [secure-forms.ts](app/lib/tools/secure-forms.ts), [vault.ts](app/lib/sensitive/vault.ts) |
+| Thread access, history and channels | Checks signed thread cookies, keeps history on the server and projects only allowlisted customer events. | [thread-access.ts](app/lib/security/thread-access.ts), [thread-credential.ts](app/lib/security/thread-credential.ts), [event-visibility.ts](app/lib/runtime/event-visibility.ts), [turn.ts](app/lib/runtime/turn.ts) |
+| Order ownership | Resolves orders through the verified session customer and rechecks structured selections; customer/model text cannot authorize a foreign order. | [helpers.ts](app/lib/tools/helpers.ts), [orders.ts](app/lib/tools/orders.ts), [selection.ts](app/lib/runtime/selection.ts) |
+| Refund policy and approval | Requires a delivered owned order, a valid positive amount within the remaining refundable value and the return window. Amounts above the configured threshold pause for human approval; execution rechecks policy. | [refund-rules.ts](app/lib/tools/refund-rules.ts), [refund.ts](app/lib/tools/refund.ts), [approval-flow.ts](app/lib/runtime/approval-flow.ts) |
+| Payout and cancellation | Requires payout details for cash-on-delivery refunds. Only the owner can cancel an unpaid refund; ambiguous histories require a choice and paid refunds cannot be reversed. | [refund-payout.ts](app/lib/tools/refund-payout.ts), [cancel-refund.ts](app/lib/tools/cancel-refund.ts) |
+| Escalation rules | Opens a ticket for explicit human/legal/GDPR requests and repeated guardrail trips or tool errors through deterministic rules. | [rules.ts](app/lib/escalation/rules.ts) |
+| Public request rate limits | Caps thread, chat and photo bursts in bounded fixed windows using configured proxy/IP and thread buckets. These limits apply in public mode. | [public-rate-limit.ts](app/lib/security/public-rate-limit.ts) |
+| Guest verification limits | Requires a matching fixture email and optional matching postal code before exposing order data; counts attempts per thread and per order and keeps failures non-disclosing. | [verification.ts](app/lib/guest/verification.ts), [order-attempts.ts](app/lib/guest/order-attempts.ts) |
+| Address validation and confirmation | Uses the order's trusted country/postcode rules, refuses delivered/foreign destinations and revalidates the stored draft on the current Confirm click. | [address-schema.ts](app/lib/address/address-schema.ts), [address-flow.ts](app/lib/address/address-flow.ts) |
+| Claims and photo uploads | Validates required claim fields and supported upload format/size before accepting them. | [claim-schema.ts](app/lib/claims/claim-schema.ts), [photo-validate.ts](app/lib/claims/photo-validate.ts) |
+| Structured reply choices | Checks the current thread, turn and offer nonce; refund confirmation retains the normal tool and approval checks. | [quick-replies.ts](app/lib/runtime/quick-replies.ts), [reply-choices.ts](app/lib/tools/reply-choices.ts) |
+| Consultant access and CSRF | Protects console requests with the configured local authentication or public visitor-cookie scope, and checks write origins. | [proxy.ts](app/proxy.ts), [auth.ts](app/lib/admin/auth.ts), [csrf.ts](app/lib/admin/csrf.ts), [visitor-access.ts](app/lib/admin/visitor-access.ts) |
+| Staff tone warning | Warns before takeover or delivery for supported Polish/English rude-word matches. Sending anyway requires an acknowledgement bound to the exact text, consultant and thread, recorded in the audit. | [staff-reply.ts](app/lib/admin/staff-reply.ts) |
+| Visitor API key boundary | Requires a public visitor's own key for model requests and approval resume; keeps request keys out of events and serialized state. | [request-key.ts](app/lib/security/request-key.ts), [model-access.ts](app/lib/runtime/model-access.ts), [visitor-key.tsx](app/components/visitor-key.tsx), [key-transport.ts](app/lib/client/key-transport.ts) |
+| Runtime and storage bounds | Caps agent turns, input/history and retained threads/photos/vault entries. State is in one process and is cleared on restart. | [config.ts](app/lib/config.ts), [history.ts](app/lib/runtime/history.ts), [threads.ts](app/lib/runtime/threads.ts), [store.ts](app/lib/data/store.ts), [vault.ts](app/lib/sensitive/vault.ts) |
+
+</details>
+
+Classifiers, masking patterns, prompt-excerpt matching and tone word lists have false positives and false negatives. They cover the implemented patterns and fixtures; production needs broader abuse testing, real identity/authorization and durable operations. Guest verification here matches fixture data supplied in chat and does not prove control of a mailbox. Public rate limits depend on correct trusted-proxy configuration.
+
+### Human decisions and feedback
+
+- **Approve or reject refunds.** A request above the configured limit pauses the Agents SDK run. A consultant decides; saved state resumes through the same rules and the decision is audited.
+- **Take over and reply.** The queue and arrival badge surface new work. A consultant writes in the selected conversation and starts helping with one action; another consultant's owned thread remains protected.
+- **Hand back with guidance.** An optional private note guides that conversation's fresh and resumed runs. It appears only in inspector/admin views and cannot override code rules.
+- **Review a tone warning.** The first warning sends nothing and takes over nothing. Editing invalidates the acknowledgement; an explicit Send anyway records the override.
+- **Rate and correct answers.** Ratings and corrections export as future eval fixtures. They do not automatically train the model or rewrite other conversations.
+- **Confirm customer actions.** Order choices, address Confirm/Cancel and structured Yes/No offers keep decisions explicit. Secure forms keep supported bank/contact values out of model text; damage photos are optional.
+- **Inspect a turn.** Agent View shows the current path, context, policy sources and masked Run log groups. Source chips open the article locally while the customer chat stays visible.
+
+The consultant selector, customers, orders, refunds and audit records are synthetic demo state. A production system needs authenticated staff identities, authorization and durable records.
 
 <details>
 <summary>Agent View: trace, handler and context</summary>
@@ -141,9 +326,9 @@ card requirements and prices can change. No deployment is performed by these fil
 |---|---|
 | `just setup` | Install locked project dependencies |
 | `just dev` | Start the development app |
-| `just check` | Typecheck, lint, offline tests and CodeTour anchors |
+| `just check` | Typecheck, lint, offline tests, CodeTour anchors and README catalog drift |
 | `just build` | Build the production app |
-| `just eval` | Run all 38 scenarios against real models; requires a key and costs money |
+| `just eval` | Run every catalog scenario against real models; requires a key and costs money |
 | `just eval address-change-confirm address-delivered-refused` | Run selected eval scenarios |
 | `node scripts/smoke-v1.mjs <base-url> --layout` | No-model browser checks against a running app |
 | `just screencast <base-url>` | Regenerate the GIF/WebM from a running app without model calls |

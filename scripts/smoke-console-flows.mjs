@@ -76,13 +76,12 @@ export async function flowTakeover(ctx) {
   await admin.getByTestId("conversation-pane").waitFor({ timeout: TIMEOUT });
   check("g: transcript shows the customer's message", (await admin.getByTestId("transcript").innerText()).includes("talk to a human"));
 
-  await admin.getByTestId("take-over-button").click();
+  await admin.getByTestId("reply-input").fill("Hello, this is Marta. How can I help you?");
+  await admin.getByTestId("reply-send").click();
   await page.getByTestId("human-banner").waitFor({ timeout: TIMEOUT });
   check("g: customer chat shows 'A human colleague joined'", (await page.getByTestId("message-system").last().innerText()).includes("A human colleague joined"));
   check("g: Agent View shows the takeover state", (await page.getByTestId("handler-status-value").getAttribute("data-status")) === "human");
 
-  await admin.getByTestId("reply-input").fill("Hello, this is Marta. How can I help you?");
-  await admin.getByTestId("reply-send").click();
   await page.getByTestId("message-consultant").waitFor({ timeout: TIMEOUT });
   check("g: consultant reply appears in the customer chat", (await page.getByTestId("message-consultant").last().innerText()).includes("this is Marta"));
 

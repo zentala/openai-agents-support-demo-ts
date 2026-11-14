@@ -15,7 +15,7 @@ import type { Address } from "@/lib/types";
 export type { Address };
 
 /** `email` and `postalCode` come from the server-only profiles file: they are what guest verification checks. */
-export type Customer = { id: string; name: string; language: string; email: string; postalCode: string };
+export type Customer = { id: string; name: string; language: string; email: string; postalCode: string; defaultAddress?: Address };
 export type OrderItem = { name: string; qty: number; unitPrice: number };
 export type Order = {
   id: string;
@@ -30,6 +30,8 @@ export type Order = {
   paymentMethod?: "card" | "cash_on_delivery";
   /** Where the order is delivered. Changes are kept separately (see `currentAddress`). */
   address: Address;
+  /** Trusted delivery country from the order record, never inferred from language or model input. */
+  deliveryCountry: "PL" | "GB" | "DE";
 };
 export type RefundRecord = {
   id: string;
@@ -38,6 +40,9 @@ export type RefundRecord = {
   amount: number;
   reason: string;
   createdAt: string;
+  /** Demo lifecycle: creating a record reserves the amount but does not transfer money. */
+  status: "pending_payout" | "paid" | "cancelled";
+  cancelledAt?: string;
   /** Where the money goes, masked ("bank account ending 1234"). The full number never leaves the vault. */
   payout?: string;
 };
@@ -71,13 +76,14 @@ export type TicketRecord = {
 /** Who decided a paused action, when, and which trace it belongs to. */
 export type AuditRecord = {
   id: string;
-  approvalId: string;
+  approvalId?: string;
+  warningId?: string;
   threadId: string;
   traceId: string;
   customerId: string;
   toolName: string;
   summary: string;
-  decision: "approved" | "rejected";
+  decision: "approved" | "rejected" | "tone_warning" | "sent_after_warning";
   decidedBy: string;
   decidedAt: string;
 };
@@ -98,7 +104,7 @@ export type RatingRecord = {
   tools: string[];
 };
 
-const profiles = profilesJson as Record<string, { email: string; postalCode: string }>;
+const profiles = profilesJson as Record<string, { email: string; postalCode: string; defaultAddress?: Address }>;
 export const customers: Customer[] = customersJson.map((customer) => ({ ...customer, ...profiles[customer.id] }));
 export const orders: Order[] = ordersJson as Order[];
 
@@ -139,10 +145,11 @@ export const listOrdersForCustomer = (customerId: string): Order[] =>
   orders.filter((o) => o.customerId === customerId);
 
 export const refundedSoFar = (orderId: string): number =>
-  memory.refunds.filter((r) => r.orderId === orderId).reduce((sum, r) => sum + r.amount, 0);
+  memory.refunds.filter((r) => r.orderId === orderId && r.status !== "cancelled").reduce((sum, r) => sum + r.amount, 0);
 
-export function addRefund(input: Omit<RefundRecord, "id" | "createdAt">): RefundRecord {
-  const record = { ...input, id: `R-${1000 + memory.refunds.length + 1}`, createdAt: new Date().toISOString() };
+export function addRefund(input: Omit<RefundRecord, "id" | "createdAt" | "status" | "cancelledAt"> & { status?: "pending_payout" | "paid" }): RefundRecord {
+  const record: RefundRecord = { ...input, orderId: normalizeOrderId(input.orderId), status: input.status ?? "pending_payout",
+    id: `R-${1000 + memory.refunds.length + 1}`, createdAt: new Date().toISOString() };
   memory.refunds.push(record);
   return record;
 }

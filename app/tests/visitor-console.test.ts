@@ -84,7 +84,7 @@ it("shows own thread and inspector replay but refuses foreign or forged-cookie t
 });
 
 it("refuses every foreign mutation and leaves foreign approvals and takeover untouched", async () => {
-  const actions = [{ type: "take_over" }, { type: "hand_back" }, { type: "reply", text: "Hello" },
+  const actions = [{ type: "take_over" }, { type: "hand_back" }, { type: "reply", text: "Hello" }, { type: "take_over_and_reply", text: "Hello" },
     { type: "rate", entryId: "entry", rating: "up" }, { type: "decide_approval", approvalId: foreign.threadId, approve: true }];
   for (const action of actions) {
     const response = await actionPost(request(own, { consultant: "Marta Nowak", threadId: foreign.threadId, ...action }));

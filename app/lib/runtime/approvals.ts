@@ -13,6 +13,8 @@ import { redactSecrets, redactValue } from "@/lib/security/request-key";
 import { getCustomer } from "@/lib/data/store";
 import type { ApprovalRequest, SupportContext } from "@/lib/types";
 import { pendingRuns as pending, type PendingRun } from "./pending-runs";
+import { refreshStaffInstruction } from "./session-context";
+import { currentTurnId } from "./event-bus";
 
 const callIdOf = (item: RunToolApprovalItem): string => {
   const raw = item.rawItem as { callId?: string };
@@ -28,6 +30,7 @@ function describeRequest(item: RunToolApprovalItem, ctx: SupportContext, traceId
       ? `Refund ${args.amount} PLN for order #${args.orderId}: "${args.reason}"`
       : `${toolName} ${JSON.stringify(args)}`;
   return {
+    turnId: currentTurnId(ctx.threadId),
     approvalId: callIdOf(item),
     threadId: ctx.threadId,
     traceId,
@@ -84,6 +87,7 @@ export async function recordDecision(approvalId: string, customerId: string, app
   run.requests.forEach((r) => pending.delete(r.approvalId));
   // The public way to keep OUR context object: the restored run is built around it, so run-support
   // can watch `run.ctx` for changes (fromString would create a private copy we cannot reach).
+  refreshStaffInstruction(run.ctx);
   const state = await RunState.fromStringWithContext<SupportContext, typeof triageAgent>(
     triageAgent,
     run.stateJson,

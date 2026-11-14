@@ -15,6 +15,9 @@ import { escalateByRule } from "./escalation-flow";
 import type { RunObservation } from "./run-observer";
 import type { RunOutcome } from "./run-support";
 import { addTranscript, pushToCustomer, type Thread } from "./threads";
+import { publishQuickReplies } from "./quick-replies";
+import { automaticStep } from "@/lib/message-kinds";
+import { customerMessages } from "./customer-messages";
 
 /** What the customer reads while a refund waits for a consultant. */
 export const waitingText = (approvals: ApprovalRequest[]): string =>
@@ -34,16 +37,21 @@ export function finishTurn(
   if (outcome.tripwire) thread.signals.guardrailTrips += 1;
 
   let reply = outcome.approvals.length > 0 ? waitingText(outcome.approvals) : outcome.reply;
+  const messages = customerMessages({ ...outcome, reply });
   // INTERVIEW: the counters are judged in code after every run; the model cannot "forget" to escalate.
   const decision = decideEscalation({ text: "", ...thread.signals });
-  if (decision.escalate && !findOpenTicketForThread(thread.threadId)) {
-    reply = [reply, escalateByRule(ctx, decision, "")].filter(Boolean).join("\n\n");
+  const automaticallyEscalated = decision.escalate && !findOpenTicketForThread(thread.threadId);
+  if (automaticallyEscalated) {
+    const text = escalateByRule(ctx, decision, "");
+    messages.push({ text, sender: automaticStep("Passed to a human", findOpenTicketForThread(thread.threadId)?.id) });
+    reply = messages.map((message) => message.text).join("\n\n");
   }
 
-  if (reply) {
-    const entry = { role: "agent" as const, text: reply, tools: observed.tools };
-    if (delivery === "push") pushToCustomer(thread, entry);
+  const quickReplies = publishQuickReplies(thread, { ...outcome, reply }, observed.tools, automaticallyEscalated);
+  for (const message of messages) {
+    const entry = { role: message.sender.kind === "ai" ? "agent" as const : "system" as const, ...message, tools: observed.tools };
+    if (delivery === "push") pushToCustomer(thread, entry, quickReplies);
     else addTranscript(thread, entry);
   }
-  return { ...outcome, reply };
+  return { ...outcome, reply, messages };
 }

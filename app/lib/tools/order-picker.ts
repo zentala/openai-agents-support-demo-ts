@@ -33,6 +33,7 @@ function toChoice(order: Order, purpose: "refund" | "status"): OrderChoice {
   return {
     orderId: order.id,
     summary: order.items.map((item) => `${item.qty} x ${item.name}`).join(", "),
+    productNames: order.items.map((item) => item.name),
     status: order.status === "delivered" ? `delivered ${order.deliveredDaysAgo} days ago` : "in transit",
     total: orderTotal(order),
     currency: CURRENCY,

@@ -1,10 +1,10 @@
 /** Latest-turn narrative from inspector events. The full event log remains available below it. */
 import type { AgentEvent } from "@/lib/types";
 
-export type TraceStep = { id: string; ts: number; label: string; detail: string; status: "passed" | "failed" | "waiting" | "skipped"; tool?: string };
+export type TraceStep = { id: string; ts: number; kind: AgentEvent["kind"]; label: string; detail: string; status: "passed" | "failed" | "waiting" | "skipped"; tool?: string };
 const short = (value: string): string => value.replace(/\s+/g, " ").slice(0, 180);
 const step = (e: AgentEvent, label: string, detail: string, status: TraceStep["status"]): TraceStep =>
-  ({ id: e.id, ts: e.ts, label, detail: short(detail), status });
+  ({ id: e.id, ts: e.ts, kind: e.kind, label, detail: short(detail), status });
 
 /** Ordinary steps preserve arrival order: input guardrails can run concurrently. */
 function eventStep(e: AgentEvent): TraceStep | undefined {
@@ -57,7 +57,7 @@ export function turnTrace(events: AgentEvent[], replySent = false): TraceStep[] 
     .some((e) => e.kind === "approval_request" && !turn.some((d) => d.kind === "approval_decision" && d.approvalId === e.approval.approvalId));
   if (replySent && !pending && !rows.some((r) => r.label === "Error" || r.label === "Reply sent")) {
     const last = turn.at(-1);
-    if (last) rows.push({ ...step(last, "Reply sent", "Delivered to the customer chat", "passed"), id: `${last.id}-reply` });
+    if (last) rows.push({ ...step(last, "Reply sent", "Delivered to the customer chat", "passed"), id: `${last.id}-reply`, kind: "chat_message" });
   }
   return rows;
 }

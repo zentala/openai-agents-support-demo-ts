@@ -21,7 +21,7 @@ import { useVisitorKey } from "@/components/visitor-key";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import customers from "@/data/customers.json";
 import { GUEST_ID, type AgentEvent, type ChatRequestBody, type SupportUIMessage, type WidgetSelection } from "@/lib/types";
-import { toChatMessage } from "./pushed-messages";
+import { toChatMessage, withInspectorCorrelation } from "./pushed-messages";
 import { randomId } from "./random-id";
 import { createThread } from "./create-thread";
 import { useCustomerChannel, useInspectorChannel } from "./use-thread-channel";
@@ -48,7 +48,7 @@ function browserError(error: Error, where = "browser / chat request"): AgentEven
 
 /**
  * The panel's event list. The same event can arrive on the chat stream AND the two channels, so
- * each id is handled once. A `chat_message` event also becomes a chat bubble (via `addBubbleRef`).
+ * each id has one event and bubble. A later inspector copy may complete its internal turn correlation.
  */
 function useEventFeed() {
   const [events, setEvents] = useState<AgentEvent[]>([]);
@@ -56,7 +56,10 @@ function useEventFeed() {
   const addBubbleRef = useRef<(message: SupportUIMessage) => void>(() => {});
 
   const addEvent = useCallback((event: AgentEvent) => {
-    if (seenIds.current.has(event.id)) return;
+    if (seenIds.current.has(event.id)) {
+      if (event.turnId) setEvents((prev) => withInspectorCorrelation(prev, event));
+      return;
+    }
     seenIds.current.add(event.id);
     setEvents((prev) => [...prev, event]);
     if (event.kind === "chat_message") addBubbleRef.current(toChatMessage(event));
@@ -74,17 +77,19 @@ function useEventFeed() {
 function useThreadLifecycle(addEvent: (event: AgentEvent) => void) {
   const [customerId, setCustomerId] = useState(customers[0].id);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const opening = useRef(0);
 
   /** New conversation (optionally as another customer). Returns the new thread id. */
   const openThread = useCallback(
     async (nextCustomerId: string): Promise<string> => {
+      const selected = ++opening.current;
+      setThreadId(null);
       try {
         const nextThreadId = await createThread(nextCustomerId);
-        setCustomerId(nextCustomerId);
-        setThreadId(nextThreadId);
+        if (selected === opening.current) { setCustomerId(nextCustomerId); setThreadId(nextThreadId); }
         return nextThreadId;
       } catch (error) {
-        addEvent(browserError(error as Error, "browser / start conversation"));
+        if (selected === opening.current) addEvent(browserError(error as Error, "browser / start conversation"));
         throw error;
       }
     },
@@ -113,9 +118,16 @@ export function useSupportSession() {
     onData: (part) => {
       if (part.type === "data-agent-event") addEvent(part.data);
     },
-    onError: (error) => addEvent(browserError(error)),
+    onError: (error) => {
+      const visible = browserError(error);
+      addEvent(visible);
+      if (visible.kind === "error") addBubbleRef.current({ id: visible.id, role: "assistant", parts: [
+        { type: "data-sender", data: { kind: "system", title: "Request failed" } },
+        { type: "text", text: `${visible.errorType}: ${visible.message}` },
+      ] });
+    },
   });
-  const { setMessages, sendMessage } = chat;
+  const { setMessages, sendMessage, stop } = chat;
   useEffect(() => {
     addBubbleRef.current = (message) => setMessages((prev) => [...prev, message]);
   }, [addBubbleRef, setMessages]);
@@ -136,11 +148,13 @@ export function useSupportSession() {
   /** New thread = clean chat, clean panel. Returns the new thread id. */
   const startFresh = useCallback(
     async (nextCustomerId: string): Promise<string> => {
+      // Stop the previous browser stream before clearing it; server business state stays on its own thread.
+      void stop();
       clear();
       setMessages([]);
       return openThread(nextCustomerId);
     },
-    [clear, setMessages, openThread],
+    [clear, setMessages, openThread, stop],
   );
 
   const customer = customerOptions.find((c) => c.id === customerId) ?? customerOptions[0];

@@ -168,3 +168,8 @@ Newest entries at the bottom.
 - Decision (PO): keep `gpt-4.1` as the default — it is the only configuration that passes the
   full suite. Model choice is driven by the eval suite, not by release date or price list.
   Tuning prompts for the gpt-6 family is a separate, optional task.
+
+## Finding 2026-11-11 — public repo published
+- Independent H10 verification: PARTIAL, no High; F1/F3 documented as public-demo limits in ADR-011, F2 test added.
+- PREP.md (recruiter feedback, interview notes) excluded from publication on owner decision; links fixed.
+- Published as single commit to github.com/zentala/openai-agents-support-demo-ts; CI check job passed.

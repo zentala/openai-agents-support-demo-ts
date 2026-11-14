@@ -6,14 +6,14 @@
   "steps": [
     {
       "file": "app/lib/client/use-support-session.ts",
-      "line": 111,
+      "line": 116,
       "title": "1. Przeglądarka: useChat (Vercel AI SDK)",
-      "description": "## Start: klient wysyła wiadomość\n\n`useChat` z `@ai-sdk/react` trzyma listę wiadomości i wysyła je przez `DefaultChatTransport` na `/api/chat`.\n\n`onData` (linia 111) odbiera **własne części strumienia** (`data-agent-event`) i dodaje zdarzenia widoczne dla klienta. Lewy panel dostaje zdarzenia wewnętrzne osobnym kanałem inspektora (`useInspectorChannel`, linia 121), chronionym jak API konsultanta. Czyli strumień czatu niesie tekst i zdarzenia klienta, a dane diagnostyczne mają osobny kanał.\n\n**Na rozmowie:** „UI i backend rozmawiają udokumentowanym protokołem AI SDK; widgety dostaje tym samym strumieniem, a diagnostykę chronionym kanałem inspektora.”",
+      "description": "## Start: klient wysyła wiadomość\n\n`useChat` z `@ai-sdk/react` trzyma listę wiadomości i wysyła je przez `DefaultChatTransport` na `/api/chat`.\n\n`onData` (linia 118) odbiera **własne części strumienia** (`data-agent-event`) i dodaje zdarzenia widoczne dla klienta. Lewy panel dostaje zdarzenia wewnętrzne osobnym kanałem inspektora (`useInspectorChannel`, linia 128), chronionym jak API konsultanta. Czyli strumień czatu niesie tekst i zdarzenia klienta, a dane diagnostyczne mają osobny kanał.\n\n**Na rozmowie:** „UI i backend rozmawiają udokumentowanym protokołem AI SDK; widgety dostaje tym samym strumieniem, a diagnostykę chronionym kanałem inspektora.”",
       "pattern": "const chat = useChat"
     },
     {
       "file": "app/app/api/chat/route.ts",
-      "line": 66,
+      "line": 70,
       "title": "2. Serwer: strumień do UI",
       "description": "## Route handler Next.js\n\n`createUIMessageStream` otwiera strumień. Linia 70: każde zdarzenie widoczne dla klienta po filtrze `toCustomerEvent` idzie jako `data-agent-event` z `transient: true` (trafia do `onData`, nie do historii czatu; dane wewnętrzne odbiera kanał inspektora).\n\nLinie 79-81: tekst odpowiedzi jako `text-start / text-delta / text-end`.\n\nZwróć uwagę: tekst wysyłamy **dopiero po** przejściu guardraila wyjścia (krok 12).",
       "pattern": "const stream = createUIMessageStream"
@@ -27,35 +27,35 @@
     },
     {
       "file": "app/lib/runtime/run-support.ts",
-      "line": 102,
+      "line": 108,
       "title": "4. Runner: uruchomienie agentów + tracing",
-      "description": "## Serce: `Runner` z Agents SDK\n\n`traceId` i `groupId` sprawiają, że cała rozmowa jest widoczna w panelu Traces na platform.openai.com (linie 100-101 wiążą ślad z turą i rozmową; link dla UI buduje `turn.ts:84`).\n\nLinie 110-112: `runner.run(triageAgent, input, { stream: true, context })`. **`context`** to obiekt sesji (kto jest zalogowany). Narzędzia czytają klienta stąd, nie z czatu.\n\nFunkcja `forwardStreamEvents` (linia 73): każde zdarzenie streamu tłumaczymy na zdarzenie panelu.\n\nLinia 118: jeśli run zatrzymał się na akceptację człowieka, zapisujemy stan (krok 10).",
+      "description": "## Serce: `Runner` z Agents SDK\n\n`traceId` i `groupId` (linie 110-111) sprawiają, że cała rozmowa jest widoczna w panelu Traces na platform.openai.com; link dla UI buduje `turn.ts:102`.\n\nLinie 119-120: `runner.run(agentForRequest(ctx), input, { stream: true, context })`. `agentForRequest` zwraca Triage, a przy wyraźnym zleceniu (potwierdzony zwrot, anulowanie, złożenie kompletnej reklamacji) agenta Zamówień z wybranym narzędziem; przy trwającej zmianie adresu agenta Zamówień bez wymuszonego narzędzia. **`context`** to obiekt sesji (kto jest zalogowany). Narzędzia czytają klienta stąd, nie z czatu.\n\nFunkcja `forwardStreamEvents` (linia 81): każde zdarzenie streamu tłumaczymy na zdarzenie panelu.\n\nLinia 125: jeśli run zatrzymał się na akceptację człowieka, zapisujemy stan (`savePausedRun`, krok 10). Gdy model nie zwrócił tekstu, `turn.ts` woła `fillEmptyReply` (`empty-reply.ts`): stały komunikat systemowy zbudowany z wyniku narzędzi tej tury.",
       "pattern": "const runner = createRequestRunner"
     },
     {
       "file": "app/lib/agents/index.ts",
-      "line": 68,
+      "line": 70,
       "title": "5. Agenci, handoffy, guardraile",
       "description": "## Trzej agenci\n\n- **Triage** (linia 68): wejście; sprawy zamówień i polityk przekazuje specjalistom, a sam może eskalować do człowieka (`handoffs`, linia 73).\n- **FAQ** (linia 40): `search_kb` i `escalate_to_human`. **Nie ma** narzędzia zwrotu: zasada najmniejszych uprawnień.\n- **Orders** (linia 48): zamówienia, karta wyboru zamówienia i zwroty.\n\nLinie 58-65: `handoff(agent, { inputType, onHandoff })` zamiast gołego agenta. Model podaje powód (i numer zamówienia), a hook `onHandoff` zapisuje je w kontekście **po sprawdzeniu właściciela zamówienia** (`handoff-context.ts`).\n\n`inputGuardrails` tylko na Triage (linia 74), bo tam wpada wiadomość. `outputGuardrails` na wszystkich (linia 36), bo każdy może odpowiedzieć.",
       "pattern": "export const triageAgent"
     },
     {
       "file": "app/lib/agents/prompts.ts",
-      "line": 17,
+      "line": 19,
       "title": "6. Prompt systemowy (tego brakowało na rozmowie)",
-      "description": "## Struktura: rola → kontekst → wolno → nie wolno → format\n\nJeden wspólny blok zasad + krótki blok roli dla każdego agenta (linie 68, 91, 97).\n\nLinia 15: **canary**, czyli fałszywy sekret w prompcie. Jeśli kiedyś pojawi się w odpowiedzi, wiemy, że prompt wyciekł (sprawdza to guardrail wyjścia).\n\nLinia 138: `buildInstructions` dokleja fakty z sesji (imię klienta, język). Instrukcje agenta to **funkcja kontekstu**.\n\n**Na rozmowie:** „Prompt to warstwa miękka. Twarde zasady są w narzędziach.”",
+      "description": "## Struktura: rola → kontekst → wolno → nie wolno → format\n\nJeden wspólny blok zasad + krótki blok roli dla każdego agenta (linie 81, 104, 110).\n\nLinia 17: **canary**, czyli fałszywy sekret w prompcie. Jeśli kiedyś pojawi się w odpowiedzi, wiemy, że prompt wyciekł (sprawdza to guardrail wyjścia).\n\nLinia 172: `buildInstructions` dokleja fakty z sesji (imię klienta, język). Instrukcje agenta to **funkcja kontekstu**.\n\n**Na rozmowie:** „Prompt to warstwa miękka. Twarde zasady są w narzędziach.”",
       "pattern": "export const SHARED_POLICY"
     },
     {
       "file": "app/lib/guardrails/input-guardrails.ts",
-      "line": 79,
+      "line": 82,
       "title": "7. Guardraile wejścia: mały model jako klasyfikator",
-      "description": "## Guardrail = `{ name, execute }`\n\nKażdy guardrail uruchamia tani model z **structured output** (zod, linia 22): dostajemy `{ reasoning, isViolation }`, a nie wolny tekst.\n\nLinia 95: `tripwireTriggered: true` zatrzymuje cały run. SDK rzuca wyjątek, który w kroku 4 zamieniamy na konkretną odmowę + czerwoną kartę z uzasadnieniem.\n\nGuardraile wejścia działają **równolegle** z agentem, więc nie dodają opóźnienia.\n\n**Na rozmowie:** „Klasyfikator może się pomylić, dlatego to jedna z warstw, a nie cała obrona.”\n\nGuardrail trafności widzi też poprzednią wiadomość asystenta, żeby krótka odpowiedź („zauważyłem to dziś”) nie była uznana za pytanie spoza tematu.",
+      "description": "## Guardrail = `{ name, execute }`\n\nKażdy guardrail uruchamia tani model z **structured output** (zod, linia 23): dostajemy `{ reasoning, isViolation }`, a nie wolny tekst.\n\nLinia 99: `tripwireTriggered: true` zatrzymuje cały run. SDK rzuca wyjątek, który w kroku 4 zamieniamy na konkretną odmowę + czerwoną kartę z uzasadnieniem.\n\nGuardraile wejścia działają **równolegle** z agentem, więc nie dodają opóźnienia.\n\n**Na rozmowie:** „Klasyfikator może się pomylić, dlatego to jedna z warstw, a nie cała obrona.”\n\nGuardrail trafności widzi też poprzednią wiadomość asystenta, żeby krótka odpowiedź („zauważyłem to dziś”) nie była uznana za pytanie spoza tematu.",
       "pattern": "function makeGuardrail"
     },
     {
       "file": "app/lib/tools/orders.ts",
-      "line": 36,
+      "line": 40,
       "title": "8. Narzędzie: tu jest bezpieczeństwo",
       "description": "## `tool({ name, description, parameters, execute })`\n\nSchemat zod (linia 31) to jednocześnie opis dla modelu i walidacja argumentów.\n\n**Linia 36, najważniejsza linia demo:** `customerId` bierzemy z **sesji**, nie z argumentów modelu. Nawet udany jailbreak nie przeczyta cudzego zamówienia, bo model w ogóle nie podaje, czyje to zamówienie.\n\nLinia 42: „nie twoje” i „nie istnieje” wyglądają identycznie, więc nie da się zgadywać numerów zamówień.",
       "pattern": "const session = sessionOf"
@@ -69,7 +69,7 @@
     },
     {
       "file": "app/lib/runtime/approvals.ts",
-      "line": 87,
+      "line": 91,
       "title": "10. Wznowienie po akceptacji (RunState)",
       "description": "## Zatrzymany run da się zapisać jako tekst\n\nPrzy przerwie zapisujemy `state.toString()` (funkcja `savePausedRun`, linia 44; serializacja w linii 51).\n\nPo decyzji konsultanta w zakładce Consultant (`/?tab=consultant`): `RunState.fromStringWithContext` (linia 84) odtwarza run **z tym samym obiektem kontekstu**, który czytają narzędzia, potem `state.approve()` lub `state.reject()` (linie 90-91), a run leci dalej od tego samego miejsca.\n\nLinia 81: wpis o oczekującej akceptacji usuwamy **przed** pierwszym `await`, więc podwójne kliknięcie nie utworzy zwrotu dwa razy.\n\n**SECURITY:** zatwierdzać może tylko konsultant przez chronione `/api/admin/actions`; `/admin` przekierowuje do zakładki Consultant. Wcześniej przeglądarka klienta mogła wysłać decyzję sama, i to była dziura.\n\n**Na rozmowie:** „Stan można trzymać w bazie, więc człowiek może zatwierdzić za godzinę, z innego serwera.”",
       "pattern": "const state = await RunState.fromStringWithContext"
@@ -83,7 +83,7 @@
     },
     {
       "file": "app/lib/guardrails/leak-guardrail.ts",
-      "line": 28,
+      "line": 29,
       "title": "12. Guardrail wyjścia: nic nie wycieka",
       "description": "## Ostatnia kontrola przed klientem\n\nSprawdza odpowiedź: fragmenty promptu, canary, dane innych klientów, numery kart (algorytm Luhna w `pii.ts`), kont bankowych i telefonów. Sama logika jest czystą funkcją w `leak-detect.ts:34`, więc da się ją przetestować bez modelu.\n\nDlatego w kroku 2 tekst idzie do UI dopiero po tym guardrailu: streaming token po tokenie pokazałby wyciek, zanim guardrail zdążyłby go zatrzymać.",
       "pattern": "export const leakGuardrail"
@@ -104,9 +104,9 @@
     },
     {
       "file": "app/lib/runtime/turn.ts",
-      "line": 74,
+      "line": 112,
       "title": "15. Jedna tura rozmowy: warstwy obrony",
-      "description": "## Kolejność ma znaczenie\n\nLinia 71 opisuje całą ścieżkę: czyszczenie wejścia → czy konsultant przejął rozmowę → reguły eskalacji → guardraile wejścia → agenci → guardrail wyjścia.\n\nLinia 94: gdy rozmowę przejął człowiek, wiadomość idzie do konsultanta i **model w ogóle się nie uruchamia**.\n\n**Na rozmowie:** „Defense in depth: każda warstwa zakłada, że poprzednia może zawieść.”",
+      "description": "## Kolejność ma znaczenie\n\nLinia 111 opisuje całą ścieżkę: czyszczenie wejścia → czy konsultant przejął rozmowę → reguły eskalacji → guardraile wejścia → agenci → guardrail wyjścia.\n\nLinia 136: gdy rozmowę przejął człowiek, wiadomość idzie do konsultanta i **model w ogóle się nie uruchamia**.\n\n**Na rozmowie:** „Defense in depth: każda warstwa zakłada, że poprzednia może zawieść.”",
       "pattern": "export async function handleUserMessage"
     },
     {
@@ -132,7 +132,7 @@
     },
     {
       "file": "app/lib/runtime/event-visibility.ts",
-      "line": 44,
+      "line": 45,
       "title": "19. Klient widzi tylko swoje zdarzenia",
       "description": "## Dwa kanały: klienta i inspektora\n\n`toCustomerEvent` przepuszcza do klienta tylko zdarzenia z listy dozwolonych (`CUSTOMER_EVENT_KINDS`, linia 41): wiadomości, przejęcie rozmowy, widgety. Wywołania narzędzi, uzasadnienia guardraili, trace i błędy wewnętrzne idą osobnym kanałem inspektora, chronionym jak panel konsultanta.\n\n**Na rozmowie:** „Lista dozwolonych, nie lista zakazanych: nowy typ zdarzenia wymaga jawnego przypisania odbiorcy w typowanej mapie `AUDIENCE` (linia 18); bez tego kod się nie skompiluje.”",
       "pattern": "export function toCustomerEvent"
@@ -160,7 +160,7 @@
     },
     {
       "file": "app/components/workspace.tsx",
-      "line": 35,
+      "line": 36,
       "pattern": "<Tabs.Root value={tab}",
       "title": "23. Zakładki workspace: jedna strona, trzy perspektywy",
       "description": "## Agent, Consultant i How it works\n\nRadix `Tabs.Root` (linia 33) daje role dostępności i sterowanie klawiaturą; `Tabs.List` (linia 36) udostępnia strzałki oraz Home/End.\n\nWybrana zakładka pochodzi z parametru `tab` w URL (linie 18-19). `router.push` (linia 30) zachowuje resztę adresu i nie przewija strony, więc działa też przycisk Wstecz.\n\nLicznik Consultant (linie 21-25) obejmuje pracę dla człowieka. Bursztynowy sygnał pojawia się dopiero po wzroście kolejki i znika po otwarciu tej zakładki. To tutaj konsultant zatwierdza zwroty i przejmuje rozmowy; `/admin` tylko przekierowuje.\n\n**Na rozmowie:** „Klient i diagnostyka zostają obok siebie, a perspektywę konsultanta otwieram bez opuszczania rozmowy.”"

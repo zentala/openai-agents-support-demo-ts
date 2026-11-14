@@ -66,6 +66,7 @@ export const createRefund = tool<typeof parameters, SupportContext>({
       status: "REFUND_CREATED",
       payout,
       refundId: refund.id,
+      refundStatus: refund.status,
       orderId: refund.orderId,
       amount: refund.amount,
       currency: CURRENCY,

@@ -12,7 +12,7 @@ import { useVisitorKey } from "@/components/visitor-key";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CONSULTANTS } from "@/lib/admin/consultants";
 import type { ActionResponse, AdminAction, AdminState, ThreadView } from "@/lib/admin/types";
-import { adminResponse } from "./admin-response";
+import { adminActionResponse, adminResponse } from "./admin-response";
 
 const POLL_MS = 1500;
 const HASH_PREFIX = "#thread=";
@@ -37,10 +37,11 @@ function useConsoleData() {
   const threadRef = useRef(threadId);
 
   const refresh = useCallback(async () => {
+    const open = threadRef.current;
     try {
       setState(await getJson<AdminState>("/api/admin/state"));
-      const open = threadRef.current;
-      setThread(open ? await getJson<ThreadView>(`/api/admin/threads/${encodeURIComponent(open)}`) : null);
+      const view = open ? await getJson<ThreadView>(`/api/admin/threads/${encodeURIComponent(open)}`) : null;
+      if (threadRef.current === open) setThread(view);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -49,6 +50,7 @@ function useConsoleData() {
 
   const select = useCallback(
     (id: string | undefined) => {
+      if (threadRef.current !== id) setThread(null);
       threadRef.current = id;
       setThreadId(id);
       window.location.hash = id ? `${HASH_PREFIX}${encodeURIComponent(id)}` : "";
@@ -59,7 +61,9 @@ function useConsoleData() {
 
   useEffect(() => {
     const syncHash = () => {
-      threadRef.current = threadFromHash();
+      const next = threadFromHash();
+      if (threadRef.current !== next) setThread(null);
+      threadRef.current = next;
       setThreadId(threadRef.current);
       void refresh();
     };
@@ -84,8 +88,8 @@ export function useAdminConsole() {
   const { setError, refresh, ...data } = useConsoleData();
 
   /** Sends one action; a refusal from the server is shown as `type: message`, never swallowed. */
-  const act = useCallback(
-    async (action: ConsoleAction): Promise<boolean> => {
+  const perform = useCallback(
+    async (action: ConsoleAction): Promise<ActionResponse> => {
       setActing(true);
       try {
         const response = await fetch("/api/admin/actions", {
@@ -93,13 +97,13 @@ export function useAdminConsole() {
           headers: { "Content-Type": "application/json", ...headers() },
           body: JSON.stringify({ ...action, consultant }),
         });
-        const result = await adminResponse<ActionResponse>(response);
+        const result = await adminActionResponse(response);
         await refresh();
-        setError(result.ok ? null : `${result.errorType}: ${result.message}`);
-        return result.ok;
+        setError(result.ok || result.errorType === "StaffToneWarning" ? null : `${result.errorType}: ${result.message}`);
+        return result;
       } catch (e) {
         setError(`ActionFailed: ${e instanceof Error ? e.message : String(e)}`);
-        return false;
+        return { ok: false, errorType: "ActionFailed", message: e instanceof Error ? e.message : String(e) };
       } finally {
         setActing(false);
       }
@@ -107,7 +111,8 @@ export function useAdminConsole() {
     [consultant, refresh, setError, headers],
   );
 
-  return { consultant, setConsultant, acting, act, refresh, setError, ...data };
+  const act = useCallback(async (action: ConsoleAction) => (await perform(action)).ok, [perform]);
+  return { consultant, setConsultant, acting, act, perform, refresh, setError, ...data };
 }
 
 export type AdminConsole = ReturnType<typeof useAdminConsole>;

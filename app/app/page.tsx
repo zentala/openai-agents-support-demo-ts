@@ -3,6 +3,8 @@ import { SupportDemo } from "@/components/support-demo";
 import { usesPublicSessionSecret } from "@/lib/security/thread-credential";
 import { VisitorKeyProvider } from "@/components/visitor-key";
 import { isPublicDemo } from "@/lib/security/request-key";
+import { KbSourcesProvider } from "@/components/kb-sources";
+import { loadKbArticles } from "@/lib/kb/load";
 
 // Evaluate at request time: a production build must not freeze the build machine's configuration.
 export const dynamic = "force-dynamic";
@@ -11,6 +13,8 @@ export default function Home() {
   const publicDemo = isPublicDemo();
   const allowReset = (process.env.ALLOW_DEMO_RESET === "true" && (!publicDemo || !!process.env.ADMIN_PASSWORD)) || (!publicDemo && process.env.NODE_ENV !== "production");
   return <VisitorKeyProvider publicDemo={publicDemo} allowReset={allowReset}>
-    <SupportDemo publicSessionSecret={usesPublicSessionSecret()} />
+    <KbSourcesProvider articles={loadKbArticles()}>
+      <SupportDemo publicSessionSecret={usesPublicSessionSecret()} />
+    </KbSourcesProvider>
   </VisitorKeyProvider>;
 }

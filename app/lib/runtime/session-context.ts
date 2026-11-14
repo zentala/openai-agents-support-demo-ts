@@ -7,11 +7,19 @@
  */
 import { getCustomer } from "@/lib/data/store";
 import { GUEST_ID, type SupportContext } from "@/lib/types";
-import type { Thread } from "./threads";
+import { getThread, type Thread } from "./threads";
+
+/** SECURITY: replace stale or caller-supplied guidance with the current server-owned record. */
+export function refreshStaffInstruction(ctx: SupportContext): void {
+  const thread = getThread(ctx.threadId);
+  delete ctx.staffInstruction;
+  if (thread?.customerId === ctx.customerId && thread.staffInstruction) ctx.staffInstruction = { ...thread.staffInstruction };
+}
 
 export function sessionContextOf(thread: Thread): SupportContext {
+  const staff = thread.staffInstruction ? { staffInstruction: { ...thread.staffInstruction } } : {};
   if (thread.customerId === GUEST_ID) {
-    return { customerId: GUEST_ID, customerName: "Guest (not verified)", threadId: thread.threadId };
+    return { customerId: GUEST_ID, customerName: "Guest (not verified)", threadId: thread.threadId, ...staff };
   }
   const customer = getCustomer(thread.customerId);
   return {
@@ -19,5 +27,6 @@ export function sessionContextOf(thread: Thread): SupportContext {
     customerName: customer?.name ?? thread.customerId,
     language: customer?.language,
     threadId: thread.threadId,
+    ...staff,
   };
 }

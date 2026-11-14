@@ -18,7 +18,9 @@ export function AuditLog({ audit, nested = false }: { audit: AuditRecord[]; nest
         {audit.map((a) => (
           <div key={a.id} data-testid="audit-row" data-decision={a.decision} className="rounded-md border border-gray-200 bg-white p-2 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={a.decision === "approved" ? "green" : "red"}>{a.decision}</Badge>
+              <Badge tone={a.decision === "approved" ? "green" : a.decision === "rejected" ? "red" : "amber"}>
+                {a.decision === "tone_warning" ? "Tone warning" : a.decision === "sent_after_warning" ? "Sent after warning" : a.decision}
+              </Badge>
               <span className="font-medium">{a.decidedBy}</span>
               <span className="ml-auto text-xs text-zinc-600">{formatTime(a.decidedAt, true)}</span>
             </div>

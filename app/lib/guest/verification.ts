@@ -21,7 +21,7 @@ import { takeOrderAttempt } from "./order-attempts";
 export const MAX_VERIFICATION_ATTEMPTS = 3;
 
 export type VerifyResult =
-  | { status: "VERIFIED"; customer: Customer }
+  | { status: "VERIFIED"; customer: Customer; orderId: string }
   | { status: "ALREADY_VERIFIED" }
   | { status: "VERIFICATION_FAILED"; attemptsLeft: number }
   | { status: "LOCKED" };
@@ -54,10 +54,12 @@ export function verifyGuest(thread: Thread, rawOrderId: string, email: string, p
   const order = orders.find((o) => o.id === orderId);
   const customer = order ? customers.find((c) => c.id === order.customerId) : undefined;
   const matches = proofMatches(order, customer, email, postalCode);
-  if (customer && matches) {
+  if (customer && order && matches) {
     // SECURITY: from here on the session IS this customer, for this thread only (the cookie is per thread).
     thread.customerId = customer.id;
-    return { status: "VERIFIED", customer };
+    // The proof identified this exact order; never choose an arbitrary order after verification.
+    thread.memory.activeOrderId = order.id;
+    return { status: "VERIFIED", customer, orderId: order.id };
   }
   return { status: "VERIFICATION_FAILED", attemptsLeft: MAX_VERIFICATION_ATTEMPTS - thread.verification.attempts };
 }

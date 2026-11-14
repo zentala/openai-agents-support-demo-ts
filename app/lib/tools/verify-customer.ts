@@ -38,6 +38,7 @@ export const verifyCustomer = tool<typeof parameters, SupportContext>({
       session.customerId = result.customer.id;
       session.customerName = result.customer.name;
       session.language = result.customer.language;
+      session.activeOrderId = result.orderId;
       emitAgentEvent(session.threadId, { kind: "verification", outcome: "verified", customerId: result.customer.id, customerName: result.customer.name });
       return asData("verify_customer", { status: "VERIFIED", customerName: result.customer.name, instruction: "Greet the customer by name and continue with their request." });
     }

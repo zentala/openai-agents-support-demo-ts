@@ -12,7 +12,7 @@ import { mergeAddressFields, proposeAddressChange, publishAddressSlots } from "@
 import { ADDRESS_SLOTS } from "@/lib/address/address-schema";
 import { getThread } from "@/lib/runtime/threads";
 import { nextSlot } from "@/lib/slots/slots";
-import type { AddressDraft, SupportContext } from "@/lib/types";
+import type { Address, SupportContext } from "@/lib/types";
 import { asData, requireVerified, sessionOf } from "./helpers";
 import { toolErrorHandler } from "./tool-error";
 
@@ -21,6 +21,7 @@ const parameters = z.object({
   street: z.string().nullable().describe("Street and house number of the NEW address, else null"),
   city: z.string().nullable().describe("City of the NEW address, else null"),
   postalCode: z.string().nullable().describe("Postal code of the NEW address, else null"),
+  country: z.string().nullable().describe("ISO country code explicitly named by the customer, else null. It is not a missing slot: code retains the order's trusted country. Never guess from language or city."),
 });
 
 export const updateAddressChange = tool<typeof parameters, SupportContext>({
@@ -39,14 +40,26 @@ export const updateAddressChange = tool<typeof parameters, SupportContext>({
     if (!thread) throw new Error(`No conversation ${session.threadId}`);
 
     // SECURITY: ownership and "still in transit" are checked here from the session, not from the model's words.
-    const { draft, rejected } = mergeAddressFields(session.customerId, session.addressDraft ?? {}, input);
+    const pending = thread.pendingAddress;
+    const prior = pending && (!input.orderId || input.orderId.replace(/^#/, "").trim() === pending.orderId)
+      ? { orderId: pending.orderId, ...pending.newAddress } : {};
+    const { draft, rejected } = mergeAddressFields(session.customerId, session.addressDraft ?? prior, input);
+    session.addressDraft = draft;
+    if (rejected.length) {
+      delete thread.pendingAddress;
+      session.addressDraft = undefined;
+      return asData("update_address_change", { status: "REFUSED", rejected, instruction: "Explain the rejection reason. Offer escalation for a country or postal-code policy refusal. Do not claim a change or confirmation card." });
+    }
     const next = nextSlot(ADDRESS_SLOTS, draft);
     if (next) {
+      delete thread.pendingAddress;
       session.addressDraft = draft;
       publishAddressSlots(session.threadId, draft);
       return asData("update_address_change", { status: "IN_PROGRESS", nextQuestion: next.question, rejected, instruction: `Ask the customer ONLY this one question, nothing else: "${next.question}"` });
     }
-    proposeAddressChange(thread, draft as Required<AddressDraft>);
+    const proposal = proposeAddressChange(thread, draft as Address & { orderId: string });
+    if (!proposal.ok) session.addressDraft = undefined;
+    if (!proposal.ok) return asData("update_address_change", { status: "REFUSED", code: proposal.code, reason: proposal.message, instruction: "Explain the rejection reason and offer escalation to a consultant. Do not claim an address change." });
     session.addressDraft = undefined;
     publishAddressSlots(session.threadId, draft, "Waiting for the customer's confirmation");
     return asData("update_address_change", {

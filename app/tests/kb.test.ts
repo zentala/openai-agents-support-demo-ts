@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chunkBody, loadKbChunks, parseArticle } from "@/lib/kb/load";
+import { chunkBody, loadKbArticles, loadKbChunks, parseArticle } from "@/lib/kb/load";
 import { cosineSimilarity, hybridScore, keywordScore, MIN_SCORE, VECTOR_WEIGHT } from "@/lib/kb/scoring";
 
 describe("scoring", () => {
@@ -23,6 +23,19 @@ describe("scoring", () => {
 });
 
 describe("knowledge base files", () => {
+  it("the source reader keeps full article paragraphs and uses the same titles as retrieval", () => {
+    const articles = loadKbArticles();
+    const delivery = articles.find((article) => article.id === "delivery-times");
+    expect(delivery?.title).toBe("Delivery times");
+    expect(delivery?.body).toContain("Delivery inside Poland takes 2-5 business days.");
+    expect(delivery?.body).toContain("2-hour delivery window by SMS");
+    expect(delivery?.body).toContain("\n");
+    expect(new Set(articles.map((article) => article.id)).size).toBe(articles.length);
+    for (const chunk of loadKbChunks()) {
+      expect(articles.find((article) => article.id === chunk.id)?.title).toBe(chunk.title);
+    }
+  });
+
   it("parses frontmatter and rejects an article without it", () => {
     expect(parseArticle("---\nid: a\ntitle: A title\n---\nBody text")).toEqual({ id: "a", title: "A title", body: "Body text" });
     expect(() => parseArticle("no frontmatter")).toThrow();

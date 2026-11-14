@@ -12,7 +12,7 @@
 import { pathToFileURL } from "node:url";
 import { evaluate } from "@/lib/eval/checks";
 import { fillTemplates, scenarios, type Scenario } from "@/lib/eval/scenarios";
-import { addRefund, resetDemoData } from "@/lib/data/store";
+import { addRefund, findOpenTicketForThread, resetDemoData } from "@/lib/data/store";
 import { resolveApproval } from "@/lib/runtime/approval-flow";
 import { clearEventLog, subscribeToThread } from "@/lib/runtime/event-bus";
 import type { RunOutcome } from "@/lib/runtime/run-support";
@@ -21,6 +21,8 @@ import { createThread, type Thread } from "@/lib/runtime/threads";
 import { handleUserMessage } from "@/lib/runtime/turn";
 import { storeSecret } from "@/lib/sensitive/vault";
 import type { AgentEvent } from "@/lib/types";
+import { takeOver, handBack } from "@/lib/runtime/takeover";
+import { CONSULTANTS } from "@/lib/admin/consultants";
 
 const only = process.argv.slice(2);
 const selected = only.length > 0 ? scenarios.filter((s) => only.includes(s.id)) : scenarios;
@@ -48,8 +50,12 @@ async function clickAddressCard(thread: Thread, decision: "confirm" | "cancel"):
 
 /** Money and secrets that exist "before" the conversation (see `seedRefunds` / `seedSecrets` in the scenario schema). */
 function seed(scenario: Scenario, thread: Thread): void {
+  if (scenario.staffNote) {
+    takeOver(thread.threadId, CONSULTANTS[0]);
+    handBack(thread.threadId, CONSULTANTS[0], scenario.staffNote);
+  }
   for (const refund of scenario.seedRefunds ?? []) {
-    addRefund({ customerId: thread.customerId, orderId: refund.orderId, amount: refund.amount, reason: "seeded by eval" });
+    addRefund({ customerId: thread.customerId, orderId: refund.orderId, amount: refund.amount, status: refund.status, reason: "seeded by eval" });
   }
   for (const secret of scenario.seedSecrets ?? []) storeSecret(thread.threadId, secret.field, secret.value);
 }
@@ -57,15 +63,16 @@ function seed(scenario: Scenario, thread: Thread): void {
 async function playConversation(scenario: Scenario, thread: Thread): Promise<{ outcome: RunOutcome; replies: string[] }> {
   const replies: string[] = [];
   const say = async (text: string): Promise<RunOutcome> => {
-    const outcome = await handleUserMessage(sessionContextOf(thread), fillTemplates(text));
+    let outcome = await handleUserMessage(sessionContextOf(thread), fillTemplates(text));
     replies.push(outcome.reply);
     // EVAL_TRACE=1 prints every turn of a multi-turn conversation, to see where a scenario went wrong.
     if (process.env.EVAL_TRACE) console.log(`      turn ${replies.length}: "${fillTemplates(text).slice(0, 80)}" -> ${outcome.reply.replace(/\s+/g, " ").slice(0, 200)}`);
+    // A refund may first be requested in a follow-up: decide before playing the next customer turn.
+    if (scenario.expect.resumeApproved) outcome = await decideAll(outcome, true);
+    if (scenario.expect.resumeRejected) outcome = await decideAll(outcome, false);
     return outcome;
   };
   let outcome = await say(scenario.message);
-  if (scenario.expect.resumeApproved) outcome = await decideAll(outcome, true);
-  if (scenario.expect.resumeRejected) outcome = await decideAll(outcome, false);
   for (const followUp of scenario.followUps ?? []) outcome = await say(followUp);
   if (scenario.expect.addressDecision) {
     outcome = await clickAddressCard(thread, scenario.expect.addressDecision);
@@ -85,7 +92,8 @@ export async function runScenario(scenario: Scenario): Promise<Row> {
   const started = Date.now();
   try {
     const { outcome, replies } = await playConversation(scenario, thread);
-    const failures = evaluate(scenario.expect, { reply: outcome.reply, replies, events, tripwire: outcome.tripwire, failed: outcome.failed });
+    const failures = evaluate(scenario.expect, { reply: outcome.reply, replies, events, tripwire: outcome.tripwire, failed: outcome.failed,
+      ticket: findOpenTicketForThread(thread.threadId), transcript: thread.transcript });
     if (process.env.EVAL_TRACE) events.filter((e) => e.kind === "tool_call" || e.kind === "tool_output").forEach((e) => console.log(`      ${e.kind} ${e.tool}: ${JSON.stringify(e.kind === "tool_call" ? e.args : e.result).slice(0, 260)}`));
     return { id: scenario.id, verdict: failures.length === 0 ? "PASS" : "FAIL", ms: Date.now() - started, notes: failures.join("; "), reply: outcome.reply, tools: events.flatMap((e) => (e.kind === "tool_call" ? [e.tool] : [])) };
   } catch (error) {

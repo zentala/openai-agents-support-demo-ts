@@ -24,3 +24,11 @@ body {
 /* Keep the accepted 14px body / 12px metadata floor in the inspector and console. */
 [data-testid="workspace"] { font-size: 14px; }
 [data-testid="workspace"] button:disabled { cursor: not-allowed; }
+
+/* Brief arrival cue only; the amber unseen state remains after the animation ends. */
+@media (prefers-reduced-motion: no-preference) {
+  .consultant-arrival-pulse { animation: consultant-arrival 350ms ease-in-out 2; }
+  @keyframes consultant-arrival {
+    50% { transform: scale(1.18); opacity: 0.65; }
+  }
+}

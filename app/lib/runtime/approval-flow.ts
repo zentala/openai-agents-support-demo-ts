@@ -10,7 +10,7 @@
 import { recordAudit } from "@/lib/admin/audit";
 import { requestApiKey } from "@/lib/security/request-key";
 import type { ApprovalRequest } from "@/lib/types";
-import { emitAgentEvent } from "./event-bus";
+import { emitAgentEvent, withTurnEvents } from "./event-bus";
 import { getPendingApproval, recordDecision } from "./approvals";
 import { observeRun } from "./run-observer";
 import { executeSupportRun, type RunOutcome } from "./run-support";
@@ -30,6 +30,11 @@ const UNKNOWN: ResolveResult = {
 export async function resolveApproval(approvalId: string, approved: boolean, decidedBy: string): Promise<ResolveResult> {
   const request = getPendingApproval(approvalId);
   if (!request) return UNKNOWN;
+  return withTurnEvents(request.threadId, request.turnId, () => decideAndResume(request, approved, decidedBy));
+}
+
+async function decideAndResume(request: ApprovalRequest, approved: boolean, decidedBy: string): Promise<ResolveResult> {
+  const { approvalId } = request;
   // SECURITY: refuse before consuming the decision; the consultant supplies their own request key.
   try { requestApiKey(); } catch {
     const message = "Add your OpenAI key to resume this approval";

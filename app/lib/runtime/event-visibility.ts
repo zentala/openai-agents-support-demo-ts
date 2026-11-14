@@ -16,6 +16,7 @@ import type { AgentEvent } from "@/lib/types";
 type Audience = "customer" | "inspector";
 
 const AUDIENCE: Record<AgentEvent["kind"], Audience> = {
+  staff_instruction: "inspector",
   agent_active: "inspector",
   handoff: "inspector",
   tool_call: "inspector",
@@ -45,5 +46,7 @@ export function toCustomerEvent(event: AgentEvent): AgentEvent | undefined {
   if (AUDIENCE[event.kind] !== "customer") return undefined;
   // The `note` of a takeover event is operator text ("agent did not answer, ticket T-2001"): drop it.
   if (event.kind === "takeover") return { id: event.id, ts: event.ts, kind: "takeover", status: event.status, consultant: event.consultant };
-  return event;
+  const customerEvent = { ...event };
+  delete customerEvent.turnId;
+  return customerEvent;
 }

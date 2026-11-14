@@ -13,6 +13,7 @@ import {
   handlerOf,
   lastChangedFields,
   slotFormsOf,
+  staffInstructionOf,
   errorsOf,
   kbHitGroups,
   latestGuardrails,
@@ -33,8 +34,12 @@ import { RunnerOutput } from "./runner-output";
 import { SlotsSection } from "./slots-section";
 import { SessionSecretNotice } from "./session-secret-notice";
 import { TurnTrace } from "./turn-trace";
+import { StaffInstructionNote } from "./staff-instruction-note";
+import { CustomerOrder } from "./customer-order";
+import { customerOrderRevision } from "@/lib/client/use-customer-order";
 
 type Props = {
+  threadId: string | null;
   events: AgentEvent[];
   context: Record<string, string | undefined>;
   /** State of the inspector channel; "refused" means the console password is missing. */
@@ -46,7 +51,7 @@ type Props = {
 /** Context field names as the panel shows them (snake_case, like the OpenAI demo). */
 const FIELD_LABEL: Record<string, string> = { activeOrderId: "active_order_id", handoffReason: "handoff_reason" };
 
-export function AgentPanel({ events, context, inspector, publicSessionSecret, replySent }: Props) {
+export function AgentPanel({ threadId, events, context, inspector, publicSessionSecret, replySent }: Props) {
 
   const fields = contextFieldsOf(events);
   const handler = handlerOf(events);
@@ -69,7 +74,9 @@ export function AgentPanel({ events, context, inspector, publicSessionSecret, re
           }}
           changed={lastChangedFields(events).map((f) => FIELD_LABEL[f] ?? f)}
         />
+        <CustomerOrder key={threadId} threadId={threadId} revision={customerOrderRevision(events, replySent)} />
         <SlotsSection forms={slotFormsOf(events)} />
+        {staffInstructionOf(events) && <div className="mb-5"><StaffInstructionNote instruction={staffInstructionOf(events)} /></div>}
         <KnowledgeHits groups={kbHitGroups(events)} />
         <Approvals approvals={approvalsOf(events)} />
         <RunnerOutput events={timelineOf(events)} />

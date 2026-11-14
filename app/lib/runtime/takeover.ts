@@ -14,6 +14,8 @@ import type { RunOutcome } from "./run-support";
 import { emitAgentEvent } from "./event-bus";
 import { assistantItem, getThread, pushToCustomer, userItem, type Thread } from "./threads";
 import { reduceTakeover, type TakeoverAction } from "./takeover-state";
+import { MAX_INPUT_LENGTH } from "@/lib/config";
+import { redactSecrets } from "@/lib/security/request-key";
 
 export type ActionResult = { ok: true } | { ok: false; errorType: string; message: string };
 
@@ -38,14 +40,55 @@ function transition(threadId: string, action: TakeoverAction): ActionResult & { 
 export function takeOver(threadId: string, consultant: string): ActionResult {
   const result = transition(threadId, { type: "take", consultant, at: Date.now() });
   if (!result.ok || !result.thread) return result;
-  emitAgentEvent(threadId, { kind: "takeover", status: "human", consultant });
-  pushToCustomer(result.thread, { role: "system", text: joinedNotice(languageOf(result.thread), consultant), author: consultant });
+  delete result.thread.pendingReplyWarning;
+  delete result.thread.pendingQuickReply;
+  announceTakeover(result.thread, consultant);
   return { ok: true };
 }
 
-export function handBack(threadId: string, consultant: string): ActionResult {
+function announceTakeover(thread: Thread, consultant: string): void {
+  emitAgentEvent(thread.threadId, { kind: "takeover", status: "human", consultant });
+  pushToCustomer(thread, { role: "system", text: joinedNotice(languageOf(thread), consultant), author: consultant });
+}
+
+function replyProblem(text: string): ActionResult | undefined {
+  if (!text.trim() || text.trim().length > MAX_INPUT_LENGTH) {
+    return { ok: false, errorType: "InvalidReply", message: `Reply must contain 1-${MAX_INPUT_LENGTH} characters.` };
+  }
+}
+
+function appendReply(thread: Thread, consultant: string, text: string): void {
+  thread.history.push(assistantItem(`[Human colleague ${consultant}]: ${text}`));
+  pushToCustomer(thread, { role: "consultant", text, author: consultant });
+}
+
+/** Validate everything before mutation; no await or second HTTP action separates takeover and reply. */
+export function takeOverAndReply(threadId: string, consultant: string, text: string): ActionResult {
+  const invalid = replyProblem(text);
+  if (invalid) return invalid;
+  const thread = getThread(threadId);
+  if (!thread) return { ok: false, errorType: "UnknownThread", message: `No conversation ${threadId}` };
+  const starting = thread.takeover.status === "agent";
+  const next = reduceTakeover(thread.takeover, starting
+    ? { type: "take", consultant, at: Date.now() } : { type: "reply", consultant });
+  if (!next.ok) return next;
+  // Future reply checks must run above this boundary, before either customer-visible effect.
+  thread.takeover = next.state;
+  if (starting) delete thread.pendingReplyWarning;
+  delete thread.pendingQuickReply;
+  if (starting) announceTakeover(thread, consultant);
+  appendReply(thread, consultant, text.trim());
+  return { ok: true };
+}
+
+export function handBack(threadId: string, consultant: string, note = ""): ActionResult {
+  if (note.length > MAX_INPUT_LENGTH) return { ok: false, errorType: "InvalidStaffNote", message: `Staff note must be at most ${MAX_INPUT_LENGTH} characters.` };
   const result = transition(threadId, { type: "release", consultant });
   if (!result.ok || !result.thread) return result;
+  delete result.thread.pendingReplyWarning;
+  const text = redactSecrets(note.trim());
+  result.thread.staffInstruction = text ? { text, consultant, updatedAt: new Date().toISOString() } : undefined;
+  emitAgentEvent(threadId, { kind: "staff_instruction", instruction: result.thread.staffInstruction ?? null });
   resolveTicketsForThread(threadId);
   // The customer's messages during the takeover sit in the history with no assistant answer of their
   // own. Without this note the agent would answer the oldest of them first after hand-back.
@@ -58,11 +101,12 @@ export function handBack(threadId: string, consultant: string): ActionResult {
 }
 
 export function consultantReply(threadId: string, consultant: string, text: string): ActionResult {
+  const invalid = replyProblem(text);
+  if (invalid) return invalid;
   const result = transition(threadId, { type: "reply", consultant });
   if (!result.ok || !result.thread) return result;
   // The agent reads this after hand-back; the name tells it a person, not itself, wrote the line.
-  result.thread.history.push(assistantItem(`[Human colleague ${consultant}]: ${text}`));
-  pushToCustomer(result.thread, { role: "consultant", text, author: consultant });
+  appendReply(result.thread, consultant, text.trim());
   return { ok: true };
 }
 

@@ -5,6 +5,7 @@ import { formatTime } from "@/lib/client/format-time";
 import { Badge } from "./ui/badge";
 import { turnTrace } from "@/lib/client/turn-trace";
 import type { AgentEvent } from "@/lib/types";
+import { EventIcon } from "./product-icon";
 const tones = { passed: "border-transparent bg-white text-zinc-900", failed: "border-red-300 bg-red-50 text-red-900", waiting: "border-amber-300 bg-amber-50 text-amber-900", skipped: "border-transparent bg-white text-zinc-700" };
 const badgeTones = { passed: "green", failed: "red", waiting: "amber", skipped: "grey" } as const;
 
@@ -16,7 +17,7 @@ export function TurnTrace({ events, replySent }: { events: AgentEvent[]; replySe
     <ol className={rows.length ? "space-y-1 rounded-lg border border-gray-200 bg-white p-2 shadow-sm" : ""} aria-label="Current turn steps">
       {rows.map((r) => <li key={r.id} data-status={r.status} className={`flex items-start gap-3 rounded-md border p-2 text-sm ${tones[r.status]}`}>
         <time className="shrink-0 text-xs tabular-nums" dateTime={new Date(r.ts).toISOString()}>{formatTime(r.ts)}</time>
-        <div className="min-w-0 break-words"><p className="font-semibold">{r.label}</p><p>{r.detail}</p></div>
+        <div className="min-w-0 break-words"><p className="flex items-center gap-2 font-semibold"><EventIcon kind={r.kind} className="h-4 w-4 shrink-0" />{r.label}</p><p>{r.detail}</p></div>
         <Badge className="ml-auto shrink-0" tone={badgeTones[r.status]}>{r.status}</Badge>
       </li>)}
     </ol>

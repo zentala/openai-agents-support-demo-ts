@@ -4,7 +4,7 @@
 import type { AuditRecord, TicketRecord } from "@/lib/data/store";
 import type { TakeoverState } from "@/lib/runtime/takeover-state";
 import type { TranscriptEntry } from "@/lib/runtime/threads";
-import type { ApprovalRequest } from "@/lib/types";
+import type { ApprovalRequest, CustomerOrderView, StaffInstruction } from "@/lib/types";
 import type { Metrics } from "./metrics";
 
 export type TicketView = TicketRecord & {
@@ -32,6 +32,8 @@ export type RatingView = { rating: "up" | "down"; correction?: string; ratedBy: 
 
 /** One conversation: transcript, who handles it, and the ratings given to its answers. */
 export type ThreadView = {
+  customerOrder: CustomerOrderView;
+  staffInstruction?: StaffInstruction;
   threadId: string;
   customerId: string;
   customerName: string;
@@ -46,9 +48,10 @@ export type ThreadView = {
 /** Body of POST /api/admin/actions. The route validates it with zod. */
 export type AdminAction =
   | { type: "take_over"; consultant: string; threadId: string }
-  | { type: "hand_back"; consultant: string; threadId: string }
-  | { type: "reply"; consultant: string; threadId: string; text: string }
+  | { type: "hand_back"; consultant: string; threadId: string; note?: string }
+  | { type: "reply"; consultant: string; threadId: string; text: string; toneAcknowledgement?: string }
+  | { type: "take_over_and_reply"; consultant: string; threadId: string; text: string; toneAcknowledgement?: string }
   | { type: "decide_approval"; consultant: string; approvalId: string; approve: boolean }
   | { type: "rate"; consultant: string; threadId: string; entryId: string; rating: "up" | "down"; correction?: string };
 
-export type ActionResponse = { ok: true } | { ok: false; errorType: string; message: string };
+export type ActionResponse = { ok: true } | { ok: false; errorType: string; message: string; warningId?: string };

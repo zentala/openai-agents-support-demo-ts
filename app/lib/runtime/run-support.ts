@@ -22,10 +22,15 @@ import { diffContext, pickMutable } from "./context-diff";
 import { emitAgentEvent } from "./event-bus";
 import { asTripwire, describeError, refusalFor } from "./errors";
 import { translateEvent } from "./translate-events";
+import { refreshStaffInstruction } from "./session-context";
+import type { CustomerMessage, SenderInfo } from "@/lib/message-kinds";
+import { routeRequest } from "@/lib/agents/requested-action";
 
 export type RunInput = string | AgentInputItem[] | RunState<SupportContext, typeof triageAgent>;
 
 export type RunOutcome = {
+  sender?: SenderInfo;
+  messages?: CustomerMessage[];
   /** Text for the chat bubble. Empty when waiting for approval. */
   reply: string;
   /** Full conversation items to store for the next turn (only on success). */
@@ -46,6 +51,7 @@ export type RunOutcome = {
 const EMPTY_OUTPUT = "EmptyModelOutput";
 
 export async function executeSupportRun(input: RunInput, ctx: SupportContext, traceId: string): Promise<RunOutcome> {
+  refreshStaffInstruction(ctx);
   let attempt = await runOnce(input, ctx, traceId);
   if (attempt.outcome.reply !== "" || attempt.outcome.approvals.length > 0 || attempt.outcome.tripwire || attempt.outcome.failed) {
     return attempt.outcome;
@@ -111,7 +117,7 @@ async function runOnce(
     const result =
       input instanceof RunState
         ? await runner.run(triageAgent, input, options)
-        : await runner.run(triageAgent, input, { ...options, context: ctx });
+        : await runner.run(routeRequest(ctx), input, { ...options, context: ctx });
     usedTools = await forwardStreamEvents(result, ctx);
     await result.completed; // rethrows tripwires / API errors that happened during the run
     const context = pickMutable(ctx);

@@ -28,6 +28,17 @@ and CSRF checks. Visual rules are in [DESIGN.md](../../DESIGN.md).
 
 ## Consequences
 
+- Multi-turn scenarios reuse the eval fixture's `followUps` as optional customer drafts. Progress is
+  keyed to the selected scenario and server-created thread and advances on real customer messages.
+  A normal agent answer offers the next draft; busy and human-handled states do not. An approval
+  decision starts resume and does not release the draft: its correlated pushed agent answer must
+  first be present in the chat. If the customer copy arrives first, the existing inspector duplicate
+  enriches only its internal turn correlation and restores its position in inspector arrival order;
+  customer projection still strips that metadata. The existing event and bubble remain unique.
+  Composer-local typing is cancellable, respects reduced motion and stops on edits or clearing.
+  A new thread/scenario remounts the composer. Nothing sends a follow-up automatically, and widget,
+  verification, business and consultant-approval checks remain the ordinary server paths.
+
 - The consultant view is reachable by anyone who opens the page; the data stays protected by
   console auth, and without `ADMIN_PASSWORD` the page shows a warning banner.
 - The old `/admin` URL still works through a redirect.

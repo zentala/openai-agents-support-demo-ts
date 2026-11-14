@@ -42,6 +42,7 @@ eval *ids:
 # gate before commit
 check: typecheck lint test
     node scripts/check-tour.mjs
+    node scripts/generate-readme-scenarios.mjs --check
 
 # Record a no-model tour from a running app; requires Playwright Chromium and ffmpeg.
 screencast base_url="http://127.0.0.1:3100/":

@@ -6,6 +6,10 @@ import type { AgentEvent, ApprovalRequest, HandlerStatus, KbHit } from "@/lib/ty
 
 type Of<K extends AgentEvent["kind"]> = Extract<AgentEvent, { kind: K }>;
 
+/** The latest staff update may explicitly clear prior guidance. */
+export const staffInstructionOf = (events: AgentEvent[]) =>
+  events.filter((event) => event.kind === "staff_instruction").at(-1)?.instruction;
+
 const ofKind = <K extends AgentEvent["kind"]>(events: AgentEvent[], kind: K): Of<K>[] =>
   events.filter((e): e is Of<K> => e.kind === kind);
 
@@ -83,6 +87,12 @@ export function verifiedCustomerOf(events: AgentEvent[]): { customerId: string; 
   return done?.customerId && done.customerName ? { customerId: done.customerId, customerName: done.customerName } : undefined;
 }
 
+/** Display language comes from public option metadata, selected by the trusted verification event when present. */
+export function customerLanguageOf(events: AgentEvent[], options: { id: string; language: string }[], selectedId: string): string | undefined {
+  const customerId = verifiedCustomerOf(events)?.customerId ?? selectedId;
+  return options.find((customer) => customer.id === customerId)?.language || undefined;
+}
+
 /** The ticket the conversation is escalated under, if any. */
 export const escalationOf = (events: AgentEvent[]) => ofKind(events, "escalation").at(-1);
 
@@ -95,6 +105,6 @@ export function openTicketOf(events: AgentEvent[]): string | undefined {
   return event.kind === "escalation" ? event.ticketId : undefined;
 }
 
-/** Events shown in the Runner Output timeline (everything except bookkeeping). */
+/** Run log events retain trace boundaries for grouping; activation-only bookkeeping stays hidden. */
 export const timelineOf = (events: AgentEvent[]): AgentEvent[] =>
-  events.filter((e) => e.kind !== "agent_active" && e.kind !== "trace");
+  events.filter((e) => e.kind !== "agent_active");

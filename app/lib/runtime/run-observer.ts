@@ -5,7 +5,16 @@
  */
 import { subscribeToThread } from "./event-bus";
 
-export type RunObservation = { toolErrors: number; tools: string[] };
+/** What update_address_change returned during this run (not earlier turns). */
+export type AddressResult = { status: string; code?: string; message?: string };
+export type RunObservation = { toolErrors: number; tools: string[]; addressResult?: AddressResult };
+
+function addressResultOf(result: unknown): AddressResult | undefined {
+  if (typeof result !== "object" || result === null || !("status" in result)) return undefined;
+  const { status, code, reason, rejected } = result as { status: unknown; code?: unknown; reason?: unknown; rejected?: { code?: string; message?: string }[] };
+  const first = rejected?.[0];
+  return { status: String(status), code: typeof code === "string" ? code : first?.code, message: typeof reason === "string" ? reason : first?.message };
+}
 
 /** Starts watching; call the returned function when the run is over to stop and read the counts. */
 export function observeRun(threadId: string): () => RunObservation {
@@ -13,6 +22,7 @@ export function observeRun(threadId: string): () => RunObservation {
   const unsubscribe = subscribeToThread(threadId, (event) => {
     if (event.kind === "error" && event.where.startsWith("tool ")) seen.toolErrors++;
     if (event.kind === "tool_call") seen.tools.push(event.tool);
+    if (event.kind === "tool_output" && event.tool === "update_address_change") seen.addressResult = addressResultOf(event.result);
   });
   return () => {
     unsubscribe();

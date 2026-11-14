@@ -42,10 +42,10 @@ Related: [VISION.md](VISION.md), [PURPOSE.md](PURPOSE.md), [STATE.md](STATE.md),
 | Escalation | `app/lib/escalation/` | `rules.ts` is a pure function; `notices.ts` holds the customer text. |
 | Guest mode | `app/lib/guest/` | Order number + e-mail verification with attempt limits. |
 | Claims, address | `app/lib/claims/`, `app/lib/address/`, `app/lib/slots/` | Slot filling with zod schema; address change that needs a Confirm click. |
-| Knowledge base | `app/lib/kb/`, `app/data/kb/` | Embeddings cached on disk plus keyword score. |
+| Knowledge base | `app/lib/kb/`, `app/data/kb/` | Embeddings cached on disk plus keyword score. Public articles also populate a shared source-chip/dialog provider from the server page; no article fetch endpoint or model URL. |
 | Consultant console | `app/lib/admin/`, `app/components/admin/`, `app/proxy.ts` | Queue, approvals, audit log, takeover, ratings export, metrics. |
 | Browser side | `app/lib/client/`, `app/components/` | `useChat` session hook, thread channel hooks, Agent View panel, workspace tabs. |
-| Evals | `app/lib/eval/`, `app/scripts/eval.ts`, `app/data/scenarios.json` | 38 scenarios against the real agents. |
+| Evals | `app/lib/eval/`, `app/scripts/eval.ts`, `app/data/scenarios.json` | Current fixture catalog against the real agents; see the [generated scenario table](../README.md#scenario-catalog). |
 | Smoke scripts | `scripts/` | Playwright flows against a running app. |
 
 ## One turn, step by step
@@ -78,6 +78,15 @@ calls `handleUserMessage` in [app/lib/runtime/turn.ts](../app/lib/runtime/turn.t
     transcript are stored. Panel events go to the inspector channel.
 
 Every error reaches the UI with its type and message, not a generic failure text.
+
+## Refund lifecycle
+
+Refund records start at `pending_payout`: creation reserves the amount but transfers no money.
+The Orders agent's `cancel_refund` checks session/order/refund ownership and cancels only before
+payout, without human approval or an external payment call. Replays report an already-cancelled
+state; ambiguous refunds require a choice. Paid refunds never reverse. Cancelled records remain
+stored but are excluded from the refundable-limit calculation. Paid state is available in eval
+fixtures; there is no payment processor or model-facing payout operation. See [ADR 003](ADR/003-business-rules-in-tool-code.md).
 
 ## Public-demo model access
 
@@ -151,7 +160,7 @@ loses everything. See [ADR 009](ADR/009-in-memory-state-with-caps.md).
 
 ## Eval suite and smoke
 
-`just eval` runs 38 scenarios against the real agents and prints a pass/fail table
+`just eval` runs the current [scenario catalog](../app/data/scenarios.json) against the real agents and prints a pass/fail table
 (needs `OPENAI_API_KEY`, costs money). `scripts/smoke-*.mjs` drive a running app with
 Playwright. Unit tests (vitest, no network) run in `just check`. Both gates must pass
 before a model or provider change is accepted. See
@@ -190,3 +199,21 @@ when there is one.
 | 2026-11-10 | Optional Agentation mount shares browser opt-in state with header Settings; no endpoint | Client-only developer feedback; absent from default page load | [012](ADR/012-opt-in-developer-annotations.md) |
 | 2026-11-11 | Request-local visitor clients, disabled tracing, key UI and public limits | Model access, transports and redacted event/storage boundaries | [011](ADR/011-hosting-and-public-demo.md) |
 | 2026-11-11 | Public console filtered by signed conversation cookies; optional public admin password | State, metrics, inspector, exports and consultant actions isolated between browsers | [011](ADR/011-hosting-and-public-demo.md) |
+| 2026-11-11 | Orders declare a trusted delivery country; address proposal and Confirm share country/postal-code validation | Address rules reject foreign destinations and invalid stored proposals without model authority | [003](ADR/003-business-rules-in-tool-code.md) |
+| 2026-11-11 | Refund lifecycle and owner-only cancellation before payout | Cancelled amounts no longer consume the refundable limit; paid amounts cannot be reversed | [003](ADR/003-business-rules-in-tool-code.md) |
+| 2026-11-11 | First consultant reply validates and takes over through one admin action; drafts bound to thread and consultant | Composer replaces header takeover buttons; selected-thread guards prevent stale text/actions during navigation | [004](ADR/004-human-in-the-loop.md) |
+| 2026-11-11 | Private hand-back instruction stored on its thread and rehydrated into fresh/resumed run context | Inspector/admin display only; customer transports filter the note, output leak checks cover it, and code rules retain authority | [004](ADR/004-human-in-the-loop.md), [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-11 | Server tone warning before both staff reply actions, with explicit text/owner/thread-bound resend | First warning has no takeover/customer effects; private one-use acknowledgement and existing audit store track the decision | [004](ADR/004-human-in-the-loop.md) |
+| 2026-11-11 | Customer & order panel reuses the guarded admin thread read with server-derived profile and selected order | Explicit fixture default address stays distinct from current delivery; guests and foreign cookies disclose no customer/order projection | [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-11 | Run log groups masked customer turns and preserves origin across approval pause/resume | Async event scope supplies inspector-only turn metadata; unknown origins use Conversation updates and customer event projection strips correlation | [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-11 | Explicit tool-created customer quick replies with one current offer per thread | Cookie/nonce/turn validation, deterministic decline and ordinary guarded refund-confirmation path; same widgets on normal/pushed answers | [003](ADR/003-business-rules-in-tool-code.md), [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-11 | Bundled catalog thumbnails shared by order picker, selected order and consultant summary | Owned picker rows add product names, never image URLs; exact client mapping selects local WebP files, with a fixed-size fallback. Docker standalone copies public assets. No identity or access-rule change. | [005](ADR/005-thread-credential-and-event-channels.md), [media sources](../docs/media/README.md) |
+| 2026-11-11 | Scenario follow-ups become thread/scenario/turn-bound composer suggestions | Local cancellable typing and explicit Send; manual edits survive, reduced motion skips animation, stale thread creation cannot replace a newer selection. No new endpoint or business authority. | [008](ADR/008-single-page-with-tabs.md) |
+| 2026-11-14 | Explicit AI/human/system message provenance in turn results, customer transport and transcript | Shared receipt/speech renderer distinguishes guarded model output, fixed code and consultant replies; mixed outputs stay separate. | [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-14 | Conversation state invokes the existing quick-reply action after successful guarded runs | Customer refund requests and KB flow no longer rely on model tool selection; current-offer nonce, ownership, decline and approval rules remain. | [003](ADR/003-business-rules-in-tool-code.md), [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-14 | Claim photo offers are one-shot; address proposal collection is retry-safe | Declined/repeated photo prompts no longer impose another stop; identical address collection retains the validated card while changes require a new nonce and Confirm. | [003](ADR/003-business-rules-in-tool-code.md) |
+| 2026-11-14 | Explicit confirmed business requests select an existing SDK tool once; private task guidance has separate leak checks | Entry/output guards and refund approval remain; useful task questions no longer count as system-prompt excerpts. | [003](ADR/003-business-rules-in-tool-code.md), [004](ADR/004-human-in-the-loop.md) |
+| 2026-11-14 | A confirmed complete damage-claim draft is filed by a selected `submit_claim` call | The claim no longer depends on triage or the model before a refund turn. | [003](ADR/003-business-rules-in-tool-code.md) |
+| 2026-11-14 | An address change in progress is continued by the Orders agent (no forced tool); an empty model reply becomes a system line from this turn's tool output (`lib/runtime/empty-reply.ts`) | The customer can leave the flow, and never sees a blank bubble or an old card. | [003](ADR/003-business-rules-in-tool-code.md) |
+| 2026-11-14 | A message naming the customer's own order number goes to the Orders agent in code (no forced tool, no existence leak) | Triage no longer answers order questions without tools. | [003](ADR/003-business-rules-in-tool-code.md) |
+| 2026-11-14 | A promise to check or wait with no tool call is replaced by a system line (`lib/runtime/empty-reply.ts`, `isDeadPromise`) | No dead "please wait a moment" is left in the chat or the history. | [003](ADR/003-business-rules-in-tool-code.md) |

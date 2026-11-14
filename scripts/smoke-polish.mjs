@@ -79,7 +79,8 @@ export async function checkReEscalation({ page, check, state }) {
   await page.locator(`[data-ticket-id="${nextId}"][data-status="open"]`).getByTestId("open-conversation").click();
   await page.waitForFunction((id) => document.querySelector('[data-testid="conversation-ticket"]')?.textContent === `Ticket ${id}`, nextId);
   check("polish: re-escalation header chooses the new open ticket", Boolean(nextId) && nextId !== state.ticketId && await page.getByTestId("conversation-ticket").innerText() === `Ticket ${nextId}`);
-  await page.getByTestId("take-over-button").click();
+  await page.getByTestId("reply-input").fill("Hello, I can help with this request.");
+  await page.getByTestId("reply-send").click();
   await page.locator('[data-testid="conversation-pane"][data-handler="human"]').waitFor();
   await page.getByTestId("hand-back-button").click();
   await page.locator(`details [data-ticket-id="${nextId}"][data-status="resolved"]`).waitFor();

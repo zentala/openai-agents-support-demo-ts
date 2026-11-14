@@ -30,7 +30,7 @@ export function ratingsToScenarios(ratings: RatingRecord[]): Scenario[] {
     return {
       id: `rated-${index + 1}-${rating.rating}`,
       label: `Rated ${rating.rating}: ${first.slice(0, LABEL_LENGTH)}`,
-      category: "Basics",
+      category: "Orders",
       customerId: rating.customerId,
       message: first,
       ...(followUps.length > 0 ? { followUps } : {}),

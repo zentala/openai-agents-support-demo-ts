@@ -10,10 +10,11 @@
  */
 import type { AgentInputItem } from "@openai/agents";
 import { redactValue } from "@/lib/security/request-key";
-import type { Address, MutableContext, SupportContext } from "@/lib/types";
+import type { Address, MutableContext, QuickReplyWidget, StaffInstruction, SupportContext } from "@/lib/types";
 import { emitAgentEvent } from "./event-bus";
 import { initialTakeover, type TakeoverState } from "./takeover-state";
 import { clearPendingRunsForThread, hasPendingRun } from "./pending-runs";
+import { senderForRole, type SenderInfo } from "@/lib/message-kinds";
 
 export type TranscriptRole = "customer" | "agent" | "consultant" | "system";
 
@@ -25,6 +26,7 @@ export type TranscriptEntry = {
   ts: number;
   /** Consultant name for `consultant` lines. */
   author?: string;
+  sender?: SenderInfo;
   /** Tools the agent called while producing this answer (for ratings and eval export). */
   tools?: string[];
 };
@@ -42,6 +44,17 @@ export type Thread = {
   transcript: TranscriptEntry[];
   takeover: TakeoverState;
   signals: ThreadSignals;
+  /** Latest incoming turn marker, never supplied by the model or browser. */
+  latestTurnId?: string;
+  /** One current customer reply offer; a new turn consumes or clears it. */
+  pendingQuickReply?: import("./quick-replies").PendingQuickReply;
+  /** Current customer refund request, used only to stage validated confirmation details. */
+  refundRequest?: string;
+  claimPhotoOffered?: boolean;
+  /** Private staff guidance, separate from customer-visible transcript and model-mutable memory. */
+  staffInstruction?: StaffInstruction;
+  /** One-shot staff acknowledgement, bound to this thread, consultant, action and exact validated text. */
+  pendingReplyWarning?: { id: string; consultant: string; text: string; action: "reply" | "take_over_and_reply" };
   /** An address change waiting for the customer's Confirm click. Only the click can apply it. */
   pendingAddress?: { proposalId: string; orderId: string; oldAddress: Address; newAddress: Address };
   /** Guest verification attempts so far (server-side: the model cannot reset it). */
@@ -121,7 +134,7 @@ export const getThread = (threadId: string): Thread | undefined => threads.get(t
 export const listThreads = (): Thread[] => [...threads.values()];
 
 export function addTranscript(thread: Thread, entry: Omit<TranscriptEntry, "id" | "ts">): TranscriptEntry {
-  const full: TranscriptEntry = { ...redactValue(entry), id: crypto.randomUUID(), ts: Date.now() };
+  const full: TranscriptEntry = { ...redactValue({ ...entry, sender: entry.sender ?? senderForRole(entry.role, entry.author) }), id: crypto.randomUUID(), ts: Date.now() };
   thread.transcript.push(full);
   return full;
 }
@@ -131,7 +144,7 @@ export function addTranscript(thread: Thread, entry: Omit<TranscriptEntry, "id" 
  * (the per-thread SSE channel forwards it). Used for everything the customer did not just ask for:
  * a consultant reply, a join/leave notice, the answer of a run resumed after an approval.
  */
-export function pushToCustomer(thread: Thread, entry: Omit<TranscriptEntry, "id" | "ts"> & { role: "agent" | "consultant" | "system" }): void {
+export function pushToCustomer(thread: Thread, entry: Omit<TranscriptEntry, "id" | "ts"> & { role: "agent" | "consultant" | "system" }, quickReplies?: QuickReplyWidget): void {
   const saved = addTranscript(thread, entry);
   emitAgentEvent(thread.threadId, {
     kind: "chat_message",
@@ -139,6 +152,8 @@ export function pushToCustomer(thread: Thread, entry: Omit<TranscriptEntry, "id"
     role: entry.role,
     text: entry.text,
     author: entry.author,
+    sender: saved.sender,
+    ...(quickReplies ? { quickReplies } : {}),
   });
 }
 

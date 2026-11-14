@@ -10,6 +10,16 @@
  */
 import type { AgentEvent, AgentEventBody } from "@/lib/types";
 import { redactValue } from "@/lib/security/request-key";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+/** Server-owned correlation survives awaits and isolates interleaved turns/resumed runs. */
+const turnScope = new AsyncLocalStorage<{ threadId: string; turnId?: string }>();
+export const withTurnEvents = <T>(threadId: string, turnId: string | undefined, work: () => T): T =>
+  turnScope.run({ threadId, turnId }, work);
+export const currentTurnId = (threadId: string): string | undefined => {
+  const scope = turnScope.getStore();
+  return scope?.threadId === threadId ? scope.turnId : undefined;
+};
 
 type Listener = (event: AgentEvent) => void;
 export type LoggedEvent = { threadId: string; event: AgentEvent };
@@ -25,7 +35,8 @@ const listeners = (globals.__nordicListeners ??= new Map<string, Set<Listener>>(
 const eventLog = (globals.__nordicEventLog ??= []);
 
 export function emitAgentEvent(threadId: string, body: AgentEventBody): void {
-  const event = { ...redactValue(body), id: crypto.randomUUID(), ts: Date.now() } as AgentEvent;
+  const turnId = currentTurnId(threadId);
+  const event = { ...redactValue(body), ...(turnId ? { turnId } : {}), id: crypto.randomUUID(), ts: Date.now() } as AgentEvent;
   eventLog.push({ threadId, event });
   if (eventLog.length > MAX_LOGGED_EVENTS) eventLog.splice(0, eventLog.length - MAX_LOGGED_EVENTS);
   listeners.get(threadId)?.forEach((listener) => listener(event));

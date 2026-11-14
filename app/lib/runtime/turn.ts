@@ -10,13 +10,14 @@ import type { AgentInputItem } from "@openai/agents";
 import { decideEscalation } from "@/lib/escalation/rules";
 import { maskSensitiveText, normalizeInput, stripInvisible, type NormalizedInput } from "@/lib/guardrails/normalize-input";
 import type { AddressDecision, SupportContext, WidgetSelection } from "@/lib/types";
-import { decideAddressChange } from "@/lib/address/address-flow";
+import { decideAddressChange, leftAddressFlow } from "@/lib/address/address-flow";
 import { MAX_HISTORY_ITEMS } from "@/lib/config";
 import { isPublicDemo, redactSecrets } from "@/lib/security/request-key";
 import { diffContext } from "./context-diff";
 import { applySelection } from "./selection";
 import { capHistory } from "./history";
-import { emitAgentEvent } from "./event-bus";
+import { currentTurnId, emitAgentEvent, withTurnEvents } from "./event-bus";
+import { consumeQuickReply } from "./quick-replies";
 import { escalateByRule } from "./escalation-flow";
 import { observeRun } from "./run-observer";
 import { executeSupportRun, type RunOutcome } from "./run-support";
@@ -24,8 +25,12 @@ import { withSecureFormNotice } from "./secure-form-notice";
 import { routeToConsultant } from "./takeover";
 import { addTranscript, assistantItem, threadFor, userItem, type Thread } from "./threads";
 import { finishTurn } from "./turn-finish";
+import { automaticStep } from "@/lib/message-kinds";
+import { findOpenTicketForThread } from "@/lib/data/store";
+import { fillEmptyReply } from "./empty-reply";
+import { rememberRefundRequest, replyDecision, stageConversationOffer } from "./conversation-offers";
 
-const fail = (reply: string): RunOutcome => ({ reply, approvals: [], failed: reply });
+const fail = (reply: string): RunOutcome => ({ reply, approvals: [], failed: reply, sender: automaticStep("Request refused") });
 
 const reportError = (threadId: string, errorType: string, message: string, where: string) =>
   emitAgentEvent(threadId, { kind: "error", errorType, message, where });
@@ -64,10 +69,43 @@ function prepareText(
 
 /** Applies the click, records the exchange in history and transcript, and returns the fixed sentence. */
 function answerAddressClick(thread: Thread, ctx: SupportContext, text: string, click: AddressDecision): RunOutcome {
-  const reply = decideAddressChange(thread, ctx.language, click);
+  delete thread.memory.addressDraft;
+  return fixedAnswer(thread, text, decideAddressChange(thread, ctx.language, click), "Address change");
+}
+
+function fixedAnswer(thread: Thread, text: string, reply: string, title = "Request updated"): RunOutcome {
   thread.history.push(userItem(text), assistantItem(reply));
-  addTranscript(thread, { role: "agent", text: reply });
-  return { reply, approvals: [] };
+  const sender = automaticStep(title);
+  addTranscript(thread, { role: "system", text: reply, sender });
+  return { reply, approvals: [], sender };
+}
+
+function recordFailure(thread: Thread, outcome: RunOutcome) {
+  addTranscript(thread, { role: "system", text: outcome.reply, sender: outcome.sender });
+  return { ok: false as const, outcome };
+}
+
+function beginTurn(baseCtx: SupportContext, rawText: string, selection?: WidgetSelection) {
+  const thread = threadFor(baseCtx);
+  if (!thread) {
+    reportError(baseCtx.threadId, "ThreadOwnershipError", "Thread belongs to another customer", "chat route");
+    return { ok: false as const, outcome: fail("This conversation belongs to another customer, so I cannot continue it.") };
+  }
+  const decision = !selection && thread.pendingQuickReply ? replyDecision(rawText) : undefined;
+  const click = selection?.type === "quick-reply" ? selection : decision ? { type: "quick-reply" as const, offerId: thread.pendingQuickReply!.id, decision } : undefined;
+  const choice = click ? consumeQuickReply(thread, baseCtx, click) : undefined;
+  if (choice) delete thread.refundRequest;
+  delete thread.pendingQuickReply;
+  thread.latestTurnId = currentTurnId(thread.threadId);
+  // A trace starts every incoming turn, including rejected choices; it never carries raw input.
+  emitAgentEvent(baseCtx.threadId, { kind: "trace", traceId: thread.traceId,
+    url: isPublicDemo() ? "" : `https://platform.openai.com/traces/trace?trace_id=${thread.traceId}` });
+  if (choice && !choice.ok) {
+    reportError(thread.threadId, "InvalidSelection", choice.message, "quick reply");
+    return recordFailure(thread, fail(choice.message));
+  }
+  const prepared = prepareText(thread, baseCtx, choice?.text ?? rawText, selection);
+  return prepared.ok ? { ...prepared, thread, declined: choice?.reply } : recordFailure(thread, prepared.outcome);
 }
 
 // INTERVIEW: normalize -> takeover check -> escalation rules -> input guardrails -> agents -> output guardrail. Defense in depth: each layer assumes the one before can fail.
@@ -76,24 +114,27 @@ export async function handleUserMessage(
   rawText: string,
   selection?: WidgetSelection,
 ): Promise<RunOutcome> {
-  const thread = threadFor(baseCtx);
-  if (!thread) {
-    reportError(baseCtx.threadId, "ThreadOwnershipError", "Thread belongs to another customer", "chat route");
-    return fail("This conversation belongs to another customer, so I cannot continue it.");
-  }
-  // A trace marker starts EVERY customer turn, including deterministic rules and human takeover.
-  emitAgentEvent(baseCtx.threadId, { kind: "trace", traceId: thread.traceId,
-    url: isPublicDemo() ? "" : `https://platform.openai.com/traces/trace?trace_id=${thread.traceId}` });
-  const prepared = prepareText(thread, baseCtx, rawText, selection);
-  if (!prepared.ok) return prepared.outcome;
-  const { text, sensitive } = prepared;
+  return withTurnEvents(baseCtx.threadId, crypto.randomUUID(), () => handleTurn(baseCtx, rawText, selection));
+}
+
+async function handleTurn(
+  baseCtx: SupportContext,
+  rawText: string,
+  selection?: WidgetSelection,
+): Promise<RunOutcome> {
+  const started = beginTurn(baseCtx, rawText, selection);
+  if (!started.ok) return started.outcome;
+  const { thread, text, sensitive, declined } = started;
+  if (!declined) rememberRefundRequest(thread, text);
 
   // The run context = identity from the session + the mutable fields this thread remembers.
-  const ctx: SupportContext = { ...baseCtx, ...thread.memory, traceId: thread.traceId };
+  const ctx: SupportContext = { ...baseCtx, ...thread.memory, traceId: thread.traceId, customerMessage: text,
+    staffInstruction: thread.staffInstruction ? { ...thread.staffInstruction } : undefined };
   addTranscript(thread, { role: "customer", text });
 
   // A human is in charge: the agent must not answer. Enforced here in code, before any model call.
   if (thread.takeover.status === "human") return routeToConsultant(thread, text);
+  if (declined) return fixedAnswer(thread, text, declined, "Request declined");
 
   // The Confirm / Cancel click of an address change card is applied by code; no model call.
   if (selection?.type === "address") return answerAddressClick(thread, ctx, text, selection);
@@ -101,11 +142,13 @@ export async function handleUserMessage(
   // Legal/GDPR terms and explicit requests for a person never reach the model.
   const early = decideEscalation({ text, guardrailTrips: 0, toolErrors: 0 });
   if (early.escalate) {
+    delete thread.memory.addressDraft;
     const notice = escalateByRule(ctx, early, text);
     thread.history.push(userItem(text), assistantItem(notice));
     // Rule-generated customer replies are agent answers; only lifecycle notices are system lines.
-    addTranscript(thread, { role: "agent", text: notice });
-    return { reply: notice, approvals: [] };
+    const sender = automaticStep("Passed to a human", findOpenTicketForThread(thread.threadId)?.id);
+    addTranscript(thread, { role: "system", text: notice, sender });
+    return { reply: notice, approvals: [], sender };
   }
 
   // Only the newest complete turns go to the model; see capHistory for why we cut at user messages.
@@ -113,6 +156,12 @@ export async function handleUserMessage(
   const stopObserving = observeRun(ctx.threadId);
   const outcome = await executeSupportRun(input, ctx, thread.traceId);
   const observed = stopObserving();
+  await stageConversationOffer(thread, ctx, outcome, observed);
+  if (leftAddressFlow(observed.tools)) {
+    delete thread.memory.addressDraft;
+    delete outcome.context?.addressDraft;
+  }
+  const answered = fillEmptyReply(thread, ctx, text, outcome, observed);
   // A bank account or phone number typed into the chat was masked above: code now points to the secure form.
-  return finishTurn(thread, ctx, withSecureFormNotice(ctx, outcome, sensitive, observed.tools), observed, "request");
+  return finishTurn(thread, ctx, withSecureFormNotice(ctx, answered, sensitive, observed.tools), observed, "request");
 }

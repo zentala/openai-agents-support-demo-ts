@@ -10,7 +10,8 @@
 import { z } from "zod";
 import { MAX_INPUT_LENGTH } from "@/lib/config";
 import { resolveApproval } from "@/lib/runtime/approval-flow";
-import { consultantReply, handBack, takeOver } from "@/lib/runtime/takeover";
+import { handBack, takeOver } from "@/lib/runtime/takeover";
+import { sendStaffReply } from "./staff-reply";
 import { isConsultant } from "./consultants";
 import { rateAnswer } from "./rate-answer";
 import type { ActionResponse } from "./types";
@@ -20,8 +21,9 @@ const threadId = z.string().min(8).max(100);
 
 export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("take_over"), ...base, threadId }),
-  z.object({ type: z.literal("hand_back"), ...base, threadId }),
-  z.object({ type: z.literal("reply"), ...base, threadId, text: z.string().trim().min(1).max(MAX_INPUT_LENGTH) }),
+  z.object({ type: z.literal("hand_back"), ...base, threadId, note: z.string().trim().max(MAX_INPUT_LENGTH).optional() }),
+  z.object({ type: z.literal("reply"), ...base, threadId, text: z.string().trim().min(1).max(MAX_INPUT_LENGTH), toneAcknowledgement: z.string().uuid().optional() }),
+  z.object({ type: z.literal("take_over_and_reply"), ...base, threadId, text: z.string().trim().min(1).max(MAX_INPUT_LENGTH), toneAcknowledgement: z.string().uuid().optional() }),
   z.object({ type: z.literal("decide_approval"), ...base, approvalId: z.string().min(1).max(200), approve: z.boolean() }),
   z.object({
     type: z.literal("rate"),
@@ -40,9 +42,10 @@ export async function runAdminAction(action: ValidAction): Promise<ActionRespons
     case "take_over":
       return takeOver(action.threadId, action.consultant);
     case "hand_back":
-      return handBack(action.threadId, action.consultant);
+      return handBack(action.threadId, action.consultant, action.note);
     case "reply":
-      return consultantReply(action.threadId, action.consultant, action.text);
+    case "take_over_and_reply":
+      return sendStaffReply(action);
     case "rate": {
       const rated = rateAnswer({ ...action });
       return rated.ok ? { ok: true } : rated;

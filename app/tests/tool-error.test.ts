@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { subscribeToThread } from "@/lib/runtime/event-bus";
 import { createRefund } from "@/lib/tools/refund";
+import { cancelRefund } from "@/lib/tools/cancel-refund";
 import { escalateToHuman, searchKbTool } from "@/lib/tools/kb-and-escalation";
 import { getOrder, listMyOrders } from "@/lib/tools/orders";
 import { reportToolError, toolErrorHandler, TOOL_ERROR_PREFIX } from "@/lib/tools/tool-error";
@@ -68,6 +69,7 @@ describe("tool error handling", () => {
       [getOrder, '{"orderId":"1001"}'],
       [listMyOrders, "{}"],
       [createRefund, '{"orderId":"1001","amount":10,"reason":"x"}'],
+      [cancelRefund, '{"orderId":"1001","refundId":null}'],
       [searchKbTool, '{"query":"returns"}'],
       [escalateToHuman, '{"summary":"help"}'],
     ];

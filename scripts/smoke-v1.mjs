@@ -28,8 +28,16 @@ const browser = await chromium.launch({
 const recording = process.argv.includes("--screencast");
 const page = await browser.newPage({ viewport: recording ? { width: 1440, height: 900 } : { width: 1500, height: 1000 }, ...(recording ? { recordVideo: { dir: path.dirname(process.env.SCREENCAST_RAW), size: { width: 1440, height: 900 } } } : {}) });
 const consoleErrors = [];
-page.on("console", (m) => m.type() === "error" && consoleErrors.push(m.text()));
-page.on("pageerror", (e) => consoleErrors.push(`pageerror: ${e.message}`));
+const actionConflicts = [];
+const expectedConflictRequests = new Map();
+const collectConflict = (response) => {
+  if (response.status() !== 409 || new URL(response.url()).pathname !== "/api/admin/actions") return;
+  actionConflicts.push(response.json().then((body) => ({ url: response.url(), request: response.request(), body }))
+    .catch(() => ({ url: response.url(), request: response.request(), body: null })));
+};
+page.on("response", collectConflict);
+page.on("console", (m) => m.type() === "error" && consoleErrors.push({ text: m.text(), url: m.location().url }));
+page.on("pageerror", (e) => consoleErrors.push({ text: `pageerror: ${e.message}`, url: "" }));
 
 const results = [];
 const check = (name, ok, detail = "") => {
@@ -44,6 +52,16 @@ const kinds = () => page.$$eval('[data-testid="runner-event"]', (els) => els.map
 
 // Shared with the console flows: the second tab is the consultant console.
 const ctx = { browser, page, baseUrl, check, idle, shot, docShot, TIMEOUT, state: {}, admin: undefined, probes: installProbes(page) };
+// Each intentional refusal is registered by its known UI test action, not just its HTTP status/type.
+ctx.expectConflict = async (origin, errorType, click) => {
+  const delivered = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/admin/actions"
+    && response.request().method() === "POST" && ["reply", "take_over_and_reply"].includes(response.request().postDataJSON()?.type), { timeout: 10000 });
+  await click();
+  const response = await delivered;
+  expectedConflictRequests.set(response.request(), { origin, errorType });
+  const body = await response.json();
+  check(`h11: ${origin} returns the intended typed refusal`, response.status() === 409 && body.ok === false && body.errorType === errorType);
+};
 
 try {
 if (recording) {
@@ -54,8 +72,9 @@ if (recording) {
 await page.goto(baseUrl);
 await page.getByTestId("chat-input").waitFor();
 ctx.admin = await openAdmin(ctx);
-ctx.admin.on("console", (m) => m.type() === "error" && consoleErrors.push(`admin: ${m.text()}`));
-ctx.admin.on("pageerror", (e) => consoleErrors.push(`admin pageerror: ${e.message}`));
+ctx.admin.on("response", collectConflict);
+ctx.admin.on("console", (m) => m.type() === "error" && consoleErrors.push({ text: `admin: ${m.text()}`, url: m.location().url }));
+ctx.admin.on("pageerror", (e) => consoleErrors.push({ text: `admin pageerror: ${e.message}`, url: "" }));
 // Refunds are kept in server memory: start every run from clean demo data.
 await page.getByTestId("scenario-menu-trigger").click();
 await Promise.all([page.waitForResponse("**/api/reset"), page.getByTestId("reset-demo-data").click()]);
@@ -148,7 +167,27 @@ await flowAddress(ctx);
 
 check("no error cards in the panel", (await page.getByTestId("error-card").count()) === 0);
 // The refusals the flows provoke on purpose (wrong credential, bad IBAN, ...) show up as "Failed to load resource" lines.
-const unexpectedErrors = consoleErrors.filter((text) => !/status of (401|403|422)/.test(text));
+// Match intentional 409 resource messages by endpoint, parsed response type and response count.
+// Unknown 409 bodies fail independently, so a known warning cannot conceal another conflict.
+const conflicts = (await Promise.all(actionConflicts)).map((item) => {
+  const expected = expectedConflictRequests.get(item.request);
+  const body = item.body;
+  return { ...item, expected: !!expected?.origin && body?.ok === false && body.errorType === expected.errorType &&
+    ((expected.errorType === "StaffToneWarning" && typeof body.warningId === "string") ||
+      (process.argv.includes("--layout") && expected.errorType === "SyntheticSendFailure" && body.message === "Offline smoke fixture")) };
+});
+const expectedCounts = new Map();
+for (const item of conflicts.filter((item) => item.expected)) expectedCounts.set(item.url, (expectedCounts.get(item.url) ?? 0) + 1);
+const unexpectedErrors = consoleErrors.filter(({ text, url }) => {
+  if (/status of (401|403|422)/.test(text)) return false;
+  const remaining = expectedCounts.get(url) ?? 0;
+  if (/Failed to load resource:.*status of 409/.test(text) && remaining > 0) {
+    expectedCounts.set(url, remaining - 1);
+    return false;
+  }
+  return true;
+}).map((entry) => entry.text);
+unexpectedErrors.push(...conflicts.filter((item) => !item.expected).map((item) => `Unexpected HTTP 409: ${item.url}`));
 check("no console errors", unexpectedErrors.length === 0, JSON.stringify(unexpectedErrors.slice(0, 3)));
 const video = page.video();
 // Closing the context flushes recordVideo; browser.close alone can leave a truncated WebM.

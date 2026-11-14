@@ -15,9 +15,10 @@ import { emitAgentEvent } from "@/lib/runtime/event-bus";
 import type { Thread } from "@/lib/runtime/threads";
 import { slotViews } from "@/lib/slots/slots";
 import type { Address, AddressDecision, AddressDraft } from "@/lib/types";
-import { ADDRESS_SLOTS, addressFieldSchemas, checkAddressChangeAllowed } from "./address-schema";
+import { ADDRESS_SLOTS, addressFieldSchemas, checkAddressChangeAllowed, checkAddressCountry, checkProposedAddress, sameAddress, type OrderRule } from "./address-schema";
+import { addressPolicyRefusal } from "./address-notices";
 
-export type AddressFields = { orderId: string | null; street: string | null; city: string | null; postalCode: string | null };
+export type AddressFields = { orderId: string | null; street: string | null; city: string | null; postalCode: string | null; country?: string | null };
 export type FieldProblem = { field: string; code: string; message: string };
 
 const oneLine = (a: Address) => `${a.street}, ${a.postalCode} ${a.city}`;
@@ -37,20 +38,38 @@ export function mergeAddressFields(customerId: string, draft: AddressDraft, inco
     if (!value) continue;
     const parsed = addressFieldSchemas[field].safeParse(value);
     if (parsed.success) next[field] = parsed.data;
-    else rejected.push({ field, code: "INVALID_VALUE", message: parsed.error.issues[0].message });
+    else {
+      delete next[field];
+      rejected.push({ field, code: "INVALID_VALUE", message: parsed.error.issues[0].message });
+    }
   }
+  if (incoming.country?.trim()) next.country = incoming.country.trim().toUpperCase();
+  const order = next.orderId ? findOrderForCustomer(customerId, next.orderId) : undefined;
+  const policy = order ? checkAddressCountry(order, next) : undefined;
+  if (policy && !policy.ok) rejected.push({ field: policy.code === "POSTAL_CODE_COUNTRY_MISMATCH" ? "postalCode" : "country", code: policy.code, message: policy.message });
   return { draft: next, rejected };
 }
+
+/** A hand-off to a person or a tool of another flow means the customer left the address change. */
+const LEAVES_ADDRESS_FLOW = ["escalate_to_human", "create_refund", "cancel_refund", "update_claim", "submit_claim"];
+export const leftAddressFlow = (tools: string[]): boolean =>
+  !tools.includes("update_address_change") && tools.some((tool) => LEAVES_ADDRESS_FLOW.includes(tool));
 
 export function publishAddressSlots(threadId: string, draft: AddressDraft, outcome?: string): void {
   emitAgentEvent(threadId, { kind: "slots", form: "address-change", title: "Delivery address change", slots: slotViews(ADDRESS_SLOTS, draft), outcome });
 }
 
 /** All slots filled: store the proposal on the thread and show the old-vs-new card. Nothing is changed yet. */
-export function proposeAddressChange(thread: Thread, draft: Required<AddressDraft>): void {
+export function proposeAddressChange(thread: Thread, draft: Address & { orderId: string }): OrderRule {
   const order = findOrderForCustomer(thread.customerId, draft.orderId);
-  if (!order) return;
-  const newAddress: Address = { street: draft.street, city: draft.city, postalCode: draft.postalCode };
+  const allowed = checkAddressChangeAllowed(order);
+  if (!allowed.ok || !order) return allowed;
+  const newAddress: Address = { street: draft.street, city: draft.city, postalCode: draft.postalCode, ...(draft.country ? { country: draft.country } : {}) };
+  const valid = checkProposedAddress(order, newAddress);
+  if (!valid.ok) return valid;
+  // Repeating collection must not invalidate the card the customer is about to confirm.
+  if (thread.pendingAddress?.orderId === order.id && sameAddress(thread.pendingAddress.newAddress, newAddress)
+    && thread.pendingAddress.newAddress.country === newAddress.country) return { ok: true };
   const proposalId = crypto.randomUUID();
   thread.pendingAddress = { proposalId, orderId: order.id, oldAddress: currentAddress(order), newAddress };
   emitAgentEvent(thread.threadId, {
@@ -58,6 +77,7 @@ export function proposeAddressChange(thread: Thread, draft: Required<AddressDraf
     widget: { type: "address-confirm", proposalId, orderId: order.id, prompt: `Change the delivery address of order #${order.id}?`, oldAddress: thread.pendingAddress.oldAddress, newAddress },
   });
   emitAgentEvent(thread.threadId, { kind: "address_change", orderId: order.id, status: "proposed", detail: `${oneLine(thread.pendingAddress.oldAddress)} -> ${oneLine(newAddress)}` });
+  return { ok: true };
 }
 
 const TEXT = {
@@ -76,9 +96,9 @@ const TEXT = {
 /** The customer clicked Confirm or Cancel on the card. Returns the fixed sentence to show (no model involved). */
 export function decideAddressChange(thread: Thread, language: string | undefined, decision: AddressDecision): string {
   const pending = thread.pendingAddress;
-  const refuse = (reason: string): string => {
+  const refuse = (reason: string, policy?: Extract<OrderRule, { ok: false }>): string => {
     emitAgentEvent(thread.threadId, { kind: "address_change", orderId: decision.orderId, status: "refused", detail: reason });
-    return TEXT.refused(language, reason);
+    return policy ? addressPolicyRefusal(language, policy) : TEXT.refused(language, reason);
   };
   // SECURITY: the click must match the proposal this thread stored; the proposal is consumed on first use.
   if (!pending || pending.orderId !== decision.orderId) return refuse("there is no pending address change for this order.");
@@ -91,9 +111,11 @@ export function decideAddressChange(thread: Thread, language: string | undefined
   }
   const order = findOrderForCustomer(thread.customerId, pending.orderId);
   const allowed = checkAddressChangeAllowed(order);
-  if (!allowed.ok) return refuse(allowed.message);
+  if (!allowed.ok) return refuse(allowed.message, allowed);
+  const valid = checkProposedAddress(order!, pending.newAddress);
+  if (!valid.ok) return refuse(valid.message, valid);
   setDeliveryAddress(pending.orderId, pending.newAddress);
   emitAgentEvent(thread.threadId, { kind: "address_change", orderId: pending.orderId, status: "applied", detail: oneLine(pending.newAddress) });
-  publishAddressSlots(thread.threadId, {}, `Order #${pending.orderId} address changed`);
+  publishAddressSlots(thread.threadId, { orderId: pending.orderId, ...pending.newAddress }, `Saved · Order #${pending.orderId} address changed`);
   return TEXT.applied(language, pending.orderId, oneLine(pending.newAddress));
 }

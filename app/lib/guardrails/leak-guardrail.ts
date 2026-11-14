@@ -12,6 +12,7 @@ import { customers, orders } from "@/lib/data/store";
 import { emitAgentEvent } from "@/lib/runtime/event-bus";
 import type { SupportContext } from "@/lib/types";
 import { detectLeak } from "./leak-detect";
+import { staffGuidanceLeak } from "./staff-guidance-leak";
 
 export const LEAK_GUARDRAIL = "leak_guardrail";
 
@@ -35,6 +36,7 @@ export const leakGuardrail: OutputGuardrail<"text", SupportContext> = {
       canary: PROMPT_CANARY,
       foreignSecrets: foreignSecretsFor(session.customerId),
     });
+    if (session.staffInstruction && staffGuidanceLeak(String(agentOutput), session.staffInstruction.text)) reasons.push("quotes private staff guidance (the complete note, or 7+ consecutive words while naming it as a note or instruction)");
     const passed = reasons.length === 0;
     emitAgentEvent(session.threadId, {
       kind: "guardrail",

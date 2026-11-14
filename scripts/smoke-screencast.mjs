@@ -4,8 +4,8 @@ export async function flowScreencast({ page, baseUrl, check }) {
   await page.getByTestId("chat-start").waitFor();
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(1000); // Give the viewer time to read the opening state.
-  await page.getByTestId("chat-start").getByRole("button", { name: "Asks for a human", exact: true }).click();
-  await page.getByTestId("message-assistant").waitFor();
+  await page.getByTestId("start-highlight-human-request").click();
+  await page.getByTestId("message-automatic").waitFor();
   await page.waitForTimeout(1400);
   const text = await page.getByTestId("handler-ticket").innerText();
   const ticket = text.match(/T-\d+/)?.[0];
@@ -17,13 +17,11 @@ export async function flowScreencast({ page, baseUrl, check }) {
   await row.getByTestId("open-conversation").click();
   await page.getByTestId("conversation-pane").waitFor();
   await page.waitForTimeout(1200);
-  await page.getByTestId("take-over-button").click();
-  await page.getByTestId("human-banner").waitFor();
-  await page.waitForTimeout(700);
   const reply = "Hello, I am here to help with your order.";
   await page.getByTestId("reply-input").fill(reply);
   await page.waitForTimeout(600);
   await page.getByTestId("reply-send").click();
+  await page.getByTestId("human-banner").waitFor();
   await page.getByTestId("message-consultant").filter({ hasText: reply }).waitFor();
   check("screencast: real consultant reply reaches the customer", true);
   await page.waitForTimeout(2000);
