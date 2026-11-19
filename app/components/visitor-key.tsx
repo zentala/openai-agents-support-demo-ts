@@ -30,7 +30,7 @@ export function VisitorKeyControl() {
   const plainHttp = useSyncExternalStore(noLocationEvents, () => window.location.protocol === "http:", () => false);
   if (!publicDemo) return null;
   return <section className="shrink-0 space-y-2 border-b border-gray-200 p-3 text-sm" aria-label="OpenAI key settings">
-    <label htmlFor="visitor-key" className="font-medium text-zinc-900">Your OpenAI key</label>
+    <label htmlFor="visitor-key" className="inline-flex items-center gap-1.5 font-medium text-zinc-900"><Icon name="apiKey" className="h-4 w-4" />Your OpenAI key</label>
     <div className="flex items-center gap-2">
       <input id="visitor-key" data-testid="visitor-key" type="password" autoComplete="off" spellCheck={false}
         value={key} onChange={(event) => setKey(event.target.value)} aria-describedby="visitor-key-help"
@@ -38,7 +38,7 @@ export function VisitorKeyControl() {
       <button type="button" onClick={() => setKey("")} className="inline-flex h-10 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium hover:bg-gray-100"><Icon name="clear" />Clear</button>
     </div>
     {plainHttp && <p role="alert" data-testid="key-https-warning" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900">Use HTTPS before entering a key on a shared host. Keys cannot be sent over plain HTTP, except on loopback for local development.</p>}
-    <p id="visitor-key-help" className="text-zinc-700">Stays in this browser tab; sent only to this server for your requests; never stored or logged. HTTPS is required except on local loopback. Clearing or reloading removes it. Model usage is billed to your account.</p>
+    <p id="visitor-key-help" className="text-zinc-700">Stays in this browser tab; sent only to this server for your requests; never stored or logged. HTTPS is required except on local loopback. Clearing or reloading removes it. Model usage is billed to your account. When you use a key, agent traces are exported with it and appear in your OpenAI dashboard.</p>
     <div className="flex flex-wrap gap-x-3 text-blue-700">
       <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="inline-flex min-h-6 items-center gap-1 underline">Create a key <Icon name="external" aria-hidden="true" className="h-3 w-3" /></a>
       <a href="https://platform.openai.com/settings/organization/limits" target="_blank" rel="noreferrer" className="inline-flex min-h-6 items-center gap-1 underline">Set a spend limit <Icon name="external" aria-hidden="true" className="h-3 w-3" /></a>

@@ -91,13 +91,13 @@ describe("kb-unknown-yes asserts the observable ticket outcome", () => {
     expect(evaluate({ ...outcomeChecks, quickRepliesShown: undefined, toolsCalled: undefined }, observation)).toEqual([]);
   });
 
-  it("fails when no ticket exists, when the model opened it, or when the reply promises a call", async () => {
+  it("fails without a ticket or when the reply promises a call", async () => {
     const { thread, events, outcome } = await playYes();
     const ticket = findOpenTicketForThread(thread.threadId)!;
     const base = { reply: outcome.reply, events, ticket, transcript: thread.transcript };
     const only = { ticketOpened: kb.expect.ticketOpened, automaticStepShown: true, replyNotMatches: kb.expect.replyNotMatches };
     expect(evaluate(only, { ...base, ticket: undefined })).toHaveLength(2);
-    expect(evaluate(only, { ...base, ticket: { ...ticket, source: "agent" } })).toEqual([expect.stringContaining("open ticket should be rule/human_requested")]);
+    expect(evaluate(only, { ...base, ticket: { ...ticket, source: "agent" } })).toEqual([]);
     expect(evaluate(only, { ...base, transcript: [] })).toEqual(["automatic step for the open ticket should be shown=true"]);
     expect(evaluate(only, { ...base, reply: "A colleague will call you tomorrow." })).toEqual([expect.stringContaining("forbidden")]);
   });

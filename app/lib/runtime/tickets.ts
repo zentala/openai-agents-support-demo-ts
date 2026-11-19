@@ -17,6 +17,7 @@ export type OpenTicketInput = {
   source: TicketRecord["source"];
   /** Short machine-readable reason, e.g. "legal_or_gdpr" or "agent_request". */
   reason: string;
+  category?: TicketRecord["category"];
 };
 
 export function openTicket(input: OpenTicketInput): { ticket: TicketRecord; created: boolean } {

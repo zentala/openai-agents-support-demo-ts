@@ -12,7 +12,7 @@
  * The caller (chat route or eval script) subscribes to the event bus for the thread.
  */
 import { RunState, type AgentInputItem, type RunStreamEvent } from "@openai/agents";
-import { createRequestRunner } from "./model-access";
+import { createRequestRunner, requestTracingApiKey } from "./model-access";
 import { redactValue } from "@/lib/security/request-key";
 import { triageAgent } from "@/lib/agents";
 import { MAX_AGENT_TURNS } from "@/lib/config";
@@ -112,7 +112,8 @@ async function runOnce(
       traceMetadata: { customerId: ctx.customerId },
     });
 
-    const options = { stream: true as const, maxTurns: MAX_AGENT_TURNS };
+    const tracingApiKey = requestTracingApiKey();
+    const options = { stream: true as const, maxTurns: MAX_AGENT_TURNS, tracing: tracingApiKey ? { apiKey: tracingApiKey } : undefined };
     // A resumed RunState already carries its context (built around `ctx`); a fresh run needs ours.
     const result =
       input instanceof RunState

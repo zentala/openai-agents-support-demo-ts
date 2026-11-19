@@ -34,6 +34,7 @@ const AUDIENCE: Record<AgentEvent["kind"], Audience> = {
   address_change: "inspector",
   error: "inspector",
   trace: "inspector",
+  unbacked_claim_blocked: "inspector",
   widget: "customer",
   takeover: "customer",
   chat_message: "customer",

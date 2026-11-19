@@ -18,7 +18,21 @@ export type RefundRefusalCode =
   | "WINDOW_EXPIRED"
   | "INVALID_AMOUNT"
   | "AMOUNT_EXCEEDS_ORDER"
-  | "BANK_ACCOUNT_REQUIRED";
+  | "BANK_ACCOUNT_REQUIRED"
+  | "DELIVERY_DISPUTE_NEEDS_HUMAN";
+
+/** Customer statements that contradict a delivered status must go to a human, never a refund. */
+export function isDeliveryDisputeReason(reason: string): boolean {
+  return /\b(?:not received|never received|never arrived|did(?: not|n't) arrive|did(?: not|n't) receive|was not delivered|missing delivery|parcel is missing)\b/i.test(reason) ||
+    /(?:nie otrzyma\w*|nie dosta\w*|nie dotar\w*|nie dostarczon\w*|nie dosz\p{L}*|przesyłk\w*.{0,25}brak)/iu.test(reason) ||
+    /\b(?:nicht erhalten|nie angekommen|nicht angekommen|nicht geliefert|sendung fehlt|paket fehlt)\b/i.test(reason);
+}
+
+export const deliveryDisputeRefusal = () => ({
+  ok: false as const,
+  code: "DELIVERY_DISPUTE_NEEDS_HUMAN" as const,
+  message: "The order is recorded as delivered but the customer says it was not received. Do not create a refund; offer a consultant to investigate.",
+});
 
 type RefundCheckInput = {
   /** From the session, never from the model's arguments. */

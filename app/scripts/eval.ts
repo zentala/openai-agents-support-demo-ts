@@ -23,6 +23,7 @@ import { storeSecret } from "@/lib/sensitive/vault";
 import type { AgentEvent } from "@/lib/types";
 import { takeOver, handBack } from "@/lib/runtime/takeover";
 import { CONSULTANTS } from "@/lib/admin/consultants";
+import { openTicket } from "@/lib/runtime/tickets";
 
 const only = process.argv.slice(2);
 const selected = only.length > 0 ? scenarios.filter((s) => only.includes(s.id)) : scenarios;
@@ -50,6 +51,8 @@ async function clickAddressCard(thread: Thread, decision: "confirm" | "cancel"):
 
 /** Money and secrets that exist "before" the conversation (see `seedRefunds` / `seedSecrets` in the scenario schema). */
 function seed(scenario: Scenario, thread: Thread): void {
+  if (scenario.seedTicket) openTicket({ customerId: thread.customerId, threadId: thread.threadId, traceId: thread.traceId,
+    summary: scenario.seedTicket.summary, reason: scenario.seedTicket.reason, source: "agent" });
   if (scenario.staffNote) {
     takeOver(thread.threadId, CONSULTANTS[0]);
     handBack(thread.threadId, CONSULTANTS[0], scenario.staffNote);

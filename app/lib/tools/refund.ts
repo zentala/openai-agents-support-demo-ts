@@ -10,11 +10,13 @@ import { tool } from "@openai/agents";
 import { z } from "zod";
 import { CURRENCY, REFUND_APPROVAL_THRESHOLD } from "@/lib/config";
 import { addRefund, findOrderForCustomer, refundedSoFar } from "@/lib/data/store";
+import { getThread } from "@/lib/runtime/threads";
+import { disputedDeliveryOrder } from "@/lib/escalation/delivery-dispute";
 import { secretStatus } from "@/lib/sensitive/vault";
 import type { SupportContext } from "@/lib/types";
 import { asData, requireVerified, sessionOf } from "./helpers";
 import { checkPayout } from "./refund-payout";
-import { checkRefund, needsHumanApproval } from "./refund-rules";
+import { checkRefund, deliveryDisputeRefusal, needsHumanApproval } from "./refund-rules";
 import { toolErrorHandler } from "./tool-error";
 
 const parameters = z.object({
@@ -23,8 +25,16 @@ const parameters = z.object({
   reason: z.string().describe("Short reason given by the customer"),
 });
 
-function validate({ customerId, threadId }: SupportContext, input: z.infer<typeof parameters>) {
+function validate({ customerId, threadId, activeOrderId }: SupportContext, input: z.infer<typeof parameters>) {
   const order = findOrderForCustomer(customerId, input.orderId);
+  // SECURITY: only an owned, delivered order may enter the dispute branch; other orders keep
+  // the existing indistinguishable NOT_FOUND and NOT_DELIVERED responses.
+  if (!order || order.customerId !== customerId || !Number.isFinite(input.amount) || input.amount <= 0) {
+    return checkRefund({ customerId, order, amount: input.amount, alreadyRefunded: order ? refundedSoFar(order.id) : 0 });
+  }
+  const earlierCustomerMessages = getThread(threadId)?.transcript.filter((entry) => entry.role === "customer").map((entry) => entry.text) ?? [];
+  const disputedOrder = disputedDeliveryOrder(customerId, activeOrderId, [input.reason, ...earlierCustomerMessages]);
+  if (order.status === "delivered" && disputedOrder?.id === order.id) return deliveryDisputeRefusal();
   const check = checkRefund({
     customerId,
     order,
@@ -57,11 +67,11 @@ export const createRefund = tool<typeof parameters, SupportContext>({
     // never trust that an earlier check is still valid.
     const check = validate(session, input);
     if (!check.ok) return asData("create_refund", { status: "REFUSED", ...check });
-    const { customerId } = session;
+    const { customerId, threadId } = session;
     const order = findOrderForCustomer(customerId, input.orderId);
     // The model sees a STATUS ("IBAN_PROVIDED (last 4: 1234)"), never the number itself.
     const payout = order?.paymentMethod === "cash_on_delivery" ? secretStatus(session.threadId, "iban") : undefined;
-    const refund = addRefund({ customerId, orderId: input.orderId, amount: input.amount, reason: input.reason, payout });
+    const refund = addRefund({ customerId, threadId, orderId: input.orderId, amount: input.amount, reason: input.reason, payout });
     return asData("create_refund", {
       status: "REFUND_CREATED",
       payout,

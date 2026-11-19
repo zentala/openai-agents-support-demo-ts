@@ -14,7 +14,7 @@ export default function Home() {
   const allowReset = (process.env.ALLOW_DEMO_RESET === "true" && (!publicDemo || !!process.env.ADMIN_PASSWORD)) || (!publicDemo && process.env.NODE_ENV !== "production");
   return <VisitorKeyProvider publicDemo={publicDemo} allowReset={allowReset}>
     <KbSourcesProvider articles={loadKbArticles()}>
-      <SupportDemo publicSessionSecret={usesPublicSessionSecret()} />
+      <SupportDemo publicSessionSecret={usesPublicSessionSecret()} publicDemo={publicDemo} />
     </KbSourcesProvider>
   </VisitorKeyProvider>;
 }

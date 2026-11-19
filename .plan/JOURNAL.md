@@ -179,3 +179,13 @@ Newest entries at the bottom.
 - H14: static gallery on GitHub Pages (https://zentala.github.io/openai-agents-support-demo-ts/), 14 recorded scenarios, spotlight player; two visual review rounds, PASS.
 - Defect found after first publish: frames recorded with the default SESSION_SECRET showed the demo-security notice; re-recorded with an ephemeral private secret, recorder now refuses frames with the notice.
 - Publication scan now allows deliberate public owner links (gallery, cal.com, agency contact).
+
+## Finding 2026-11-19 — Agents SDK 0.21 per-run trace key
+- Inspected the installed `@openai/agents` 0.21.0 and its `@openai/agents-core` / `@openai/agents-openai` dependencies before changing behavior.
+- `TracingConfig` in `agents-core/dist/tracing/config.d.ts` exposes `apiKey`; `run.js` passes that run option into the trace as `tracingApiKey`, overriding the exporter default. The OpenAI exporter uses that key for its export request.
+- Public-demo BYOK runs now enable tracing and pass the request-local visitor key only as the SDK run's tracing option. It is not added to agent context, persisted app state, events, or logs. Public-demo runs with no visitor key keep tracing disabled; the UI says “Traces are off in the public demo.”
+- The visitor-key help text now says traces are exported with that key and appear in the visitor's OpenAI dashboard. No model call or paid eval was used to verify export.
+
+- 2026-11-19: owner approved rewriting the public history. The public repo now has one commit (da4da7a) without research notes, test screenshots or CodeTour; CI passed. The private checkout keeps full history; the publish clone keeps tag backup-before-squash-2026-11-19.
+
+- 2026-11-19: owner approved H15 model spend ("tak"): new D2/D6 eval scenarios plus one full eval; a second full run needs the coordinator.

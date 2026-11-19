@@ -59,6 +59,14 @@ export type Thread = {
   pendingAddress?: { proposalId: string; orderId: string; oldAddress: Address; newAddress: Address };
   /** Guest verification attempts so far (server-side: the model cannot reset it). */
   verification: { attempts: number };
+  /** Exact order a guest proved ownership of; keeps guest access scoped to that order. */
+  verifiedGuestOrderId?: string;
+  /** Consultant who last returned a human-owned conversation to the agent. */
+  handedBackBy?: string;
+  /** A classifier-confirmed offer of consultant help, valid for the customer's next message. */
+  consultantOffered?: boolean;
+  /** A short affirmative that accepted the immediately preceding consultant offer. */
+  customerAgreedToConsultant?: boolean;
 };
 
 const globals = globalThis as unknown as { __nordicThreads?: Map<string, Thread> };

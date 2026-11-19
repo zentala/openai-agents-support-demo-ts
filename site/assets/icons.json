@@ -244,6 +244,10 @@
       "glyph": "User",
       "symbol": "icon-customer"
     },
+    "claim": {
+      "glyph": "BadgeCheck",
+      "symbol": "icon-claim"
+    },
     "escalation": {
       "glyph": "LifeBuoy",
       "symbol": "icon-escalation"

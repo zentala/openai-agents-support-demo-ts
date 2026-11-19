@@ -61,6 +61,8 @@ function toRow(e: AgentEvent): Row {
       return { label: "Pushed to chat", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.author ?? e.role}: ${e.text.slice(0, 120)}` };
     case "error":
       return { label: "Error", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.errorType}: ${e.message}`, tone: "text-red-600" };
+    case "unbacked_claim_blocked":
+      return { label: "Unbacked claim blocked", icon: <Icon name="guardrail" className={ICON} />, summary: `Blocked unsupported ${e.claimType} claim`, tone: "text-red-700" };
     default:
       return { label: e.kind, icon: null, summary: "" };
   }

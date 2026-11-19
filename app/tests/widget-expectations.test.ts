@@ -45,8 +45,8 @@ it("the expectation schema rejects unknown fields, widget kinds and quick replie
   expect(expectSchema.safeParse({ widgetsShown: ["secure-form"], widgetsNotShown: ["address-confirm"], quickRepliesShown: true }).success).toBe(true);
 });
 
-it("all 49 fixtures remain parsed, and the seven widget stories use exact business kinds", () => {
-  expect(scenarios).toHaveLength(49);
+it("all 54 fixtures remain parsed, and the seven widget stories use exact business kinds", () => {
+  expect(scenarios).toHaveLength(54);
   const kinds = { "order-picker": "order-picker", "iban-typed-in-chat": "secure-form", "cod-refund-needs-iban": "secure-form", "address-change-confirm": "address-confirm" };
   for (const [id, kind] of Object.entries(kinds)) {
     const expectation = scenarios.find((scenario) => scenario.id === id)!.expect;

@@ -45,6 +45,8 @@ export type RefundRecord = {
   cancelledAt?: string;
   /** Where the money goes, masked ("bank account ending 1234"). The full number never leaves the vault. */
   payout?: string;
+  /** Owning conversation, used by the per-thread diagnostics export. */
+  threadId?: string;
 };
 /** A damaged-item claim; created only from a draft that passed the full claim schema. */
 export type ClaimRecord = {
@@ -57,6 +59,8 @@ export type ClaimRecord = {
   noticedAt: string;
   photoId?: string;
   createdAt: string;
+  /** Owning conversation, used by the per-thread diagnostics export. */
+  threadId?: string;
 };
 /** An uploaded damage photo, held in memory. `threadId` ties it to the conversation that uploaded it. */
 export type PhotoRecord = { id: string; threadId: string; mimeType: string; bytes: Buffer; fileName: string };
@@ -71,6 +75,7 @@ export type TicketRecord = {
   /** Who created it: the agent's escalate_to_human tool or the escalation rules in code. */
   source: "agent" | "rule";
   reason: string;
+  category?: "delivery_dispute" | "consultant_complaint";
   status: "open" | "resolved";
 };
 /** Who decided a paused action, when, and which trace it belongs to. */

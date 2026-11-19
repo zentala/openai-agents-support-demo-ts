@@ -14,12 +14,13 @@ import { ConsultantPanel } from "./admin/consultant-panel";
 import { HowItWorks } from "./how-it-works";
 import type { Scenario } from "@/lib/eval/scenarios";
 import { ProductIcon } from "./product-icon";
+import { CustomerTab } from "./admin/customer-tab";
 
-export function Workspace({ events, children, busy, onScenario }: { events: AgentEvent[]; children: ReactNode; busy: boolean; onScenario: (scenario: Scenario) => void }) {
+export function Workspace({ events, threadId, children, busy, publicDemo, onScenario }: { events: AgentEvent[]; threadId: string | null; children: ReactNode; busy: boolean; publicDemo: boolean; onScenario: (scenario: Scenario) => void }) {
   const router = useRouter();
   const params = useSearchParams();
   const selected = params.get("tab");
-  const tab = selected === "consultant" || selected === "how" ? selected : "agent";
+  const tab = selected === "consultant" || selected === "customer" || selected === "how" ? selected : "agent";
   const console = useAdminConsole();
   const count = console.state ? needsHumanCount(console.state) : null;
   const [badge, setBadge] = useState<BadgeState>({ count: null, unseen: false, pulse: 0 });
@@ -39,14 +40,20 @@ export function Workspace({ events, children, busy, onScenario }: { events: Agen
         <h1 className="text-lg font-semibold">Agent View</h1>
         <a href="https://zentala.github.io/openai-agents-support-demo-ts/" target="_blank" rel="noreferrer" data-testid="watch-scenarios"
           className="inline-flex min-h-6 items-center gap-1 text-xs underline"><Icon name="scenario" className="h-3 w-3" />Watch scenarios</a>
-        <a href={latestTrace(events)?.url} aria-disabled={!latestTrace(events)} tabIndex={latestTrace(events) ? 0 : -1} target="_blank" rel="noreferrer"
-          className={`ml-auto inline-flex min-h-6 items-center gap-1 text-xs underline ${latestTrace(events) ? "" : "cursor-not-allowed opacity-50"}`} data-testid="open-trace">Open trace <Icon name="external" aria-hidden="true" className="h-3 w-3" /></a>
+        <div className="ml-auto flex items-center gap-2">
+          {latestTrace(events) ? <a href={latestTrace(events)?.url} target="_blank" rel="noreferrer"
+            className="inline-flex min-h-6 items-center gap-1 text-xs underline" data-testid="open-trace">Open trace <Icon name="external" aria-hidden="true" className="h-3 w-3" /></a>
+            : publicDemo ? <span className="inline-flex min-h-6 items-center gap-1 text-xs text-white/80" data-testid="trace-disabled">Traces are off in the public demo</span> : null}
+          <a href={threadId ? `/api/admin/inspector/${encodeURIComponent(threadId)}/export` : undefined} download aria-disabled={!threadId} tabIndex={threadId ? 0 : -1}
+            title="Export diagnostics" aria-label="Export diagnostics" data-testid="export-diagnostics"
+            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-white/10 ${threadId ? "" : "cursor-not-allowed opacity-50"}`}><Icon name="download" aria-hidden="true" className="h-4 w-4" /></a>
+        </div>
         <AnnotationSettings />
         <span className="hidden shrink-0 border-l border-blue-300 pl-3 text-xs sm:inline">Nordic Home</span>
       </header>
       {/* Radix supplies tab roles, roving focus, Arrow keys and Home/End. */}
       <Tabs.List aria-label="Demo workspace" className="flex min-h-10 shrink-0 gap-1 overflow-x-auto border-b border-gray-200 bg-white px-2">
-        {([["agent", "Agent"], ["consultant", "Consultant"], ["how", "How it works"]] as const).map(([value, label]) => (
+        {([["agent", "Agent"], ["consultant", "Consultant"], ["customer", "Customer"], ["how", "How it works"]] as const).map(([value, label]) => (
           <Tabs.Trigger key={value} value={value} className="workspace-tab inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap border-b-[3px] border-transparent px-2 text-sm font-semibold text-zinc-700 hover:bg-gray-100 data-[state=active]:border-blue-600 data-[state=active]:text-blue-700">
             <ProductIcon name={value} />{label}{value === "consultant" && <><span key={badge.pulse} data-testid="consultant-badge" data-unseen={badge.unseen} className={`inline-flex rounded-full px-1.5 tabular-nums ${badge.pulse > 0 ? "consultant-arrival-pulse" : ""} ${badge.unseen ? "bg-amber-100 text-amber-900" : "bg-gray-100 text-zinc-700"}`} aria-hidden="true">{count ?? "…"}</span><span className="sr-only"> {count === null ? "Human queue loading" : `${count} ${count === 1 ? "needs" : "need"} a human`}</span></>}
           </Tabs.Trigger>
@@ -54,6 +61,7 @@ export function Workspace({ events, children, busy, onScenario }: { events: Agen
       </Tabs.List>
       <Tabs.Content value="agent" className="flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden">{children}</Tabs.Content>
       <Tabs.Content value="consultant" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><ConsultantPanel c={console} /></Tabs.Content>
+      <Tabs.Content value="customer" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><CustomerTab threadId={threadId} events={events} /></Tabs.Content>
       <Tabs.Content value="how" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><HowItWorks busy={busy} onScenario={onScenario} /></Tabs.Content>
     </Tabs.Root>
   );

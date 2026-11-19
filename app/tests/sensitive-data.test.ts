@@ -17,6 +17,11 @@ import type { AgentEvent, SupportContext } from "@/lib/types";
 
 const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
+const actionClassifier = vi.hoisted(() => ({ run: vi.fn(async () => []) }));
+vi.mock("@/lib/guardrails/action-claims", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/guardrails/action-claims")>("@/lib/guardrails/action-claims")),
+  classifyActionClaims: actionClassifier.run,
+}));
 const { handleUserMessage } = await import("@/lib/runtime/turn");
 const { POST: createThreadRoute } = await import("@/app/api/threads/route");
 const { POST: secureFormRoute } = await import("@/app/api/threads/[threadId]/secure-form/route");

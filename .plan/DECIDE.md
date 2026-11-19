@@ -1,4 +1,4 @@
 # Waiting for the operator
 
-No open operator decisions.
-- [ ] 2026-11-19 · Remove the old test screenshots, research notes and CodeTour from the PUBLIC repo history too (they are gone from the current tree; history still holds ~27 MB) · options: A (recommended) force-push one fresh commit to the public repo / B keep history · blocks: nothing · from: coordinator session
+
+- [ ] 2026-11-19 · Approve a second full eval for H15 after review fixes (the claim check moves from word patterns to a model classifier, which changes every reply path; roughly 1–3 USD, unmeasured) · options: A (recommended) approve / B ship with targeted scenarios only · blocks: H15 publication · from: coordinator

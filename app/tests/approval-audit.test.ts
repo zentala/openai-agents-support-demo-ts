@@ -9,6 +9,11 @@ import type { AgentEvent, ApprovalRequest, SupportContext } from "@/lib/types";
 // event bus are real, so the console path (decide -> audit -> resume -> push to customer) is exercised.
 const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
+const actionClassifier = vi.hoisted(() => ({ run: vi.fn(async () => [{ type: "refund" as const, stance: "done" as const, recipient_named: null }]) }));
+vi.mock("@/lib/guardrails/action-claims", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/guardrails/action-claims")>("@/lib/guardrails/action-claims")),
+  classifyActionClaims: actionClassifier.run,
+}));
 
 const { triageAgent } = await import("@/lib/agents");
 const { listPendingApprovals, savePausedRun } = await import("@/lib/runtime/approvals");
@@ -68,8 +73,8 @@ describe("resolveApproval (console path)", () => {
 
     expect(listPendingApprovals()).toHaveLength(0);
     expect(pushed.find((e) => e.kind === "approval_decision")).toMatchObject({ approved: true, decidedBy: "Marta Nowak" });
-    expect(pushed.find((e) => e.kind === "chat_message")).toMatchObject({ role: "agent", text: "Your refund was approved." });
-    expect(getThread(ctx.threadId)?.transcript.at(-1)).toMatchObject({ role: "agent", text: "Your refund was approved." });
+    expect(pushed.find((e) => e.kind === "chat_message")).toMatchObject({ role: "system", text: "Przepraszam, nie mogę potwierdzić, że zwrot został zatwierdzony." });
+    expect(getThread(ctx.threadId)?.transcript.at(-1)).toMatchObject({ role: "system", text: "Przepraszam, nie mogę potwierdzić, że zwrot został zatwierdzony." });
   });
 
   it("records a rejection too", async () => {

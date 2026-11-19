@@ -16,6 +16,8 @@ import { openTicket } from "@/lib/runtime/tickets";
 
 const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
+const classifier = vi.hoisted(() => ({ run: vi.fn(async () => ({ finalOutput: { claims: [] } })) }));
+vi.mock("@/lib/runtime/model-access", () => ({ createRequestRunner: () => ({ run: classifier.run }), requestTracingApiKey: () => undefined }));
 const { handleUserMessage } = await import("@/lib/runtime/turn");
 let thread: Thread;
 let other: Thread;
@@ -126,10 +128,10 @@ it("an older resumed run cannot replace the current turn's offer; valid pushed r
   await offer(); const current = thread.pendingQuickReply!.id;
   await withTurnEvents(thread.threadId, firstTurn, async () => {
     expect(await offerReplyChoices.invoke(new RunContext(sessionContextOf(thread)), JSON.stringify(escalation))).toContain("no longer current");
-    finishTurn(thread, sessionContextOf(thread), { reply: "Old resumed answer", approvals: [] }, { tools: [], toolErrors: 0 }, "push");
+    await finishTurn(thread, sessionContextOf(thread), { reply: "Old resumed answer", approvals: [] }, { tools: [], toolErrors: 0 }, "push");
   });
   expect(thread.pendingQuickReply?.id).toBe(current);
-  withTurnEvents(thread.threadId, thread.latestTurnId, () => finishTurn(thread, sessionContextOf(thread), { reply: "Current pushed answer", approvals: [] }, { tools: [], toolErrors: 0 }, "push"));
+  await withTurnEvents(thread.threadId, thread.latestTurnId, () => finishTurn(thread, sessionContextOf(thread), { reply: "Current pushed answer", approvals: [] }, { tools: [], toolErrors: 0 }, "push"));
   expect(readEventLog().at(-1)?.event).toMatchObject({ kind: "chat_message", quickReplies: { offerId: current } });
 });
 it("FAQ/Triage choices cannot reveal refund details or perform any refund", async () => {

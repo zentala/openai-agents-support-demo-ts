@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findOrderForCustomer, orderTotal } from "@/lib/data/store";
-import { checkRefund, needsHumanApproval } from "@/lib/tools/refund-rules";
+import { checkRefund, deliveryDisputeRefusal, isDeliveryDisputeReason, needsHumanApproval } from "@/lib/tools/refund-rules";
 
 const refund = (customerId: string, orderId: string, amount: number, alreadyRefunded = 0) =>
   checkRefund({ customerId, order: findOrderForCustomer(customerId, orderId), amount, alreadyRefunded });
@@ -50,4 +50,15 @@ describe("approval threshold", () => {
     expect(needsHumanApproval(500.01, 500)).toBe(true);
     expect(orderTotal(findOrderForCustomer("c-anna", "1002")!)).toBe(3200);
   });
+});
+
+describe("delivery dispute classification", () => {
+  it.each([
+    "The order was delivered but I never received it.",
+    "Nie otrzymałem przesyłki, mimo że jest oznaczona jako dostarczona.",
+    "Die Lieferung ist als zugestellt markiert, aber ich habe sie nicht erhalten.",
+  ])("recognizes a customer who disputes delivery: %s", (reason) => expect(isDeliveryDisputeReason(reason)).toBe(true));
+
+  it("does not classify an ordinary return reason as a dispute", () => expect(isDeliveryDisputeReason("The chair does not fit")).toBe(false));
+  it("returns a refusal without a refund outcome", () => expect(deliveryDisputeRefusal()).toMatchObject({ ok: false, code: "DELIVERY_DISPUTE_NEEDS_HUMAN" }));
 });

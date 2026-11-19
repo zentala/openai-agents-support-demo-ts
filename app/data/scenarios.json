@@ -447,7 +447,6 @@
       ],
       "ticketCreated": true,
       "ticketOpened": {
-        "source": "rule",
         "reason": "human_requested"
       },
       "automaticStepShown": true,
@@ -1355,6 +1354,68 @@
     }
   },
   {
+    "id": "delivery-dispute-pl",
+    "label": "Dispute a delivered order in Polish",
+    "category": "Orders",
+    "customerId": "c-anna",
+    "message": "tu jest napisane ze wszystko doszlo ale 1003 nie doszlo",
+    "followUps": [
+      "no nie otrzymalem, che zwrot",
+      "tak",
+      "Tak, chcę porozmawiać z konsultantem."
+    ],
+    "expectedAnswer": "Acknowledge the tracking record and its date, do not promise a refund, and create a delivery-dispute ticket only after the customer agrees to a consultant.",
+    "expect": {
+      "toolsNotCalled": ["create_refund"],
+      "refundsCreated": 0,
+      "ticketOpened": {"reason": "delivery_dispute", "category": "delivery_dispute"},
+      "replyNotMatches": ["refund.{0,20}(created|started|approved)", "forwarded to (the )?(right )?(team|department)"]
+    }
+  },
+  {
+    "id": "delivery-dispute-en",
+    "label": "Dispute a delivered order in English",
+    "category": "Orders",
+    "customerId": "c-james",
+    "message": "Order 1005 is marked delivered, but I never received it. Please refund it.",
+    "followUps": ["No, it was not delivered to me.", "Yes, please connect me with a consultant."],
+    "expectedAnswer": "State the delivery record and date, avoid promising a refund, and escalate only after agreement.",
+    "expect": {
+      "toolsNotCalled": ["create_refund"],
+      "refundsCreated": 0,
+      "ticketOpened": {"reason": "delivery_dispute", "category": "delivery_dispute"},
+      "replyNotMatches": ["refund.{0,20}(created|started|approved)", "forwarded to (the )?(right )?(team|department)"]
+    }
+  },
+  {
+    "id": "delivery-dispute-insists-twice",
+    "label": "Insist twice without agreeing to a consultant",
+    "category": "Orders",
+    "customerId": "c-anna",
+    "message": "Order 1003 says delivered but I did not receive it. I want a refund.",
+    "followUps": ["I am sure. Nobody at home got the package; refund it.", "I insist again. Do the refund now."],
+    "expectedAnswer": "Do not create or promise a refund. Offer a consultant, but do not create a ticket until the customer agrees.",
+    "expect": {
+      "refundsCreated": 0,
+      "ticketCreated": false,
+      "replyNotMatches": ["refund.{0,20}(created|started|approved)", "forwarded to (the )?(right )?(team|department)"]
+    }
+  },
+  {
+    "id": "delivery-dispute-agrees-to-consultant",
+    "label": "Agree to a consultant about missing delivery",
+    "category": "Orders",
+    "customerId": "c-anna",
+    "message": "Order 1003 is marked delivered, but I did not receive it. I want my money back.",
+    "followUps": ["Yes"],
+    "expectedAnswer": "Create a ticket only after the customer agrees to consultant help.",
+    "expect": {
+      "ticketOpened": {"reason": "delivery_dispute", "category": "delivery_dispute"},
+      "refundsCreated": 0,
+      "replyNotMatches": ["forwarded to (the )?(right )?(team|department)"]
+    }
+  },
+  {
     "id": "damage-refund-human",
     "label": "Report damage, approve a refund, then ask for a person",
     "category": "Data collection",
@@ -1384,6 +1445,21 @@
         "CLAIM_CREATED",
         "REFUND_CREATED"
       ]
+    }
+  },
+  {
+    "id": "consultant-complaint-after-handback",
+    "label": "Complain after a consultant hands back",
+    "category": "Human handoff",
+    "customerId": "c-anna",
+    "seedTicket": {"reason": "agent_request", "summary": "Customer requested consultant help."},
+    "staffNote": "The customer complained that the consultant was rude.",
+    "message": "The consultant who handled this was rude. I can't accept that. Please connect me with another consultant.",
+    "expectedAnswer": "Apologise, say you cannot judge the consultant, and accurately describe the previous ticket as closed after the hand-back. Offer a new consultant without inventing a team or person.",
+    "expect": {
+      "toolsCalled": ["escalate_to_human"],
+      "ticketOpened": {"source": "agent", "reason": "consultant_complaint", "category": "consultant_complaint"},
+      "replyNotMatches": ["right team", "right person", "department will", "handled by the right"]
     }
   }
 ]

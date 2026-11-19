@@ -59,6 +59,7 @@ export function verifyGuest(thread: Thread, rawOrderId: string, email: string, p
     thread.customerId = customer.id;
     // The proof identified this exact order; never choose an arbitrary order after verification.
     thread.memory.activeOrderId = order.id;
+    thread.verifiedGuestOrderId = order.id;
     return { status: "VERIFIED", customer, orderId: order.id };
   }
   return { status: "VERIFICATION_FAILED", attemptsLeft: MAX_VERIFICATION_ATTEMPTS - thread.verification.attempts };

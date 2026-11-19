@@ -8,6 +8,11 @@ import type { AgentEvent, SupportContext } from "@/lib/types";
 // (threads, takeover, escalation rules, tickets, event bus) is real, so these tests exercise the seams.
 const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
+const actionClassifier = vi.hoisted(() => ({ run: vi.fn(async () => []) }));
+vi.mock("@/lib/guardrails/action-claims", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/guardrails/action-claims")>("@/lib/guardrails/action-claims")),
+  classifyActionClaims: actionClassifier.run,
+}));
 
 const { handleUserMessage } = await import("@/lib/runtime/turn");
 const { takeOver, handBack, consultantReply } = await import("@/lib/runtime/takeover");

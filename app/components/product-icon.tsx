@@ -3,7 +3,7 @@ import { Icon } from "./icon";
 import type { IconKey } from "@/lib/ui/icons";
 import type { AgentEvent } from "@/lib/types";
 
-const ICONS = { agent: "agent", consultant: "consultant", how: "howItWorks", takeOver: "takeOver", handBack: "handBack", send: "send",
+const ICONS = { agent: "agent", consultant: "consultant", customer: "customer", how: "howItWorks", takeOver: "takeOver", handBack: "handBack", send: "send",
   escalation: "escalation", guardrail: "guardrail", approval: "approval", tool: "tool", handoff: "handoff", kb: "knowledge", error: "error" } satisfies Record<string, IconKey>;
 type IconName = keyof typeof ICONS;
 const EVENTS: Partial<Record<AgentEvent["kind"], IconName>> = { escalation: "escalation", guardrail: "guardrail",

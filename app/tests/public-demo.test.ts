@@ -22,7 +22,7 @@ it("requires the visitor header even when the owner has a configured key", () =>
   expect(() => withRequestKey(request(), () => createEmbeddingClient())).toThrow("Add your OpenAI key");
 });
 
-it("isolates concurrent model and embedding clients and disables tracing", async () => {
+it("isolates BYOK model and embedding clients and enables visitor-key tracing", async () => {
   const seen: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
     seen.push(new Headers(init?.headers).get("authorization") ?? "");
@@ -31,7 +31,7 @@ it("isolates concurrent model and embedding clients and disables tracing", async
   const runners = await Promise.all([first, second].map((key) => withRequestKey(request(key), async () => {
     await Promise.resolve();
     const runner = createRequestRunner();
-    expect(runner.config.tracingDisabled).toBe(true);
+    expect(runner.config.tracingDisabled).toBe(false);
     await expect(runner.run(new Agent({ name: "offline", model: "gpt-4.1", instructions: "Test" }), "hello")).rejects.toThrow();
     await expect(createEmbeddingClient().embeddings.create({ model: "text-embedding-3-small", input: "test" })).rejects.toThrow();
     expect(requestApiKey()).toBe(key);

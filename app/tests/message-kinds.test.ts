@@ -16,6 +16,12 @@ import { sessionContextOf } from "@/lib/runtime/session-context";
 import type { CustomerMessage } from "@/lib/message-kinds";
 import type { TicketContext } from "@/lib/client/ticket-status";
 
+const classifier = vi.hoisted(() => ({ run: vi.fn(async () => []) }));
+vi.mock("@/lib/guardrails/action-claims", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/guardrails/action-claims")>("@/lib/guardrails/action-claims");
+  return { ...actual, classifyActionClaims: classifier.run };
+});
+
 const html = (entry: CustomerMessage) => renderToStaticMarkup(createElement(MessageContent, entry));
 afterEach(() => vi.unstubAllEnvs());
 
@@ -42,18 +48,18 @@ it("renders missing-key and stale-card producers as explicit automatic failures"
   expect(customerMessages(stale)[0].sender.kind).toBe("system");
 });
 
-it("keeps model speech and automatic error-limit escalation separate", () => {
+it("keeps model speech and automatic error-limit escalation separate", async () => {
   const thread = createThread("c-james");
-  const result = finishTurn(thread, sessionContextOf(thread), { reply: "A model answer", approvals: [] }, { tools: [], toolErrors: 3 }, "request");
+  const result = await finishTurn(thread, sessionContextOf(thread), { reply: "A model answer", approvals: [] }, { tools: [], toolErrors: 3 }, "request");
   const entries = customerMessages(result);
   expect(entries.map((entry) => entry.sender.kind)).toEqual(["ai", "system"]);
   expect(html(entries[0])).toContain("AI assistant");
   expect(html(entries[1])).not.toContain("AI assistant");
 });
 
-it("renders the guardrail finish as a safety receipt rather than an AI answer", () => {
+it("renders the guardrail finish as a safety receipt rather than an AI answer", async () => {
   const thread = createThread("c-james");
-  const result = finishTurn(thread, sessionContextOf(thread), { reply: "Blocked by relevance_guardrail", tripwire: "relevance_guardrail", approvals: [] }, { tools: [], toolErrors: 0 }, "request");
+  const result = await finishTurn(thread, sessionContextOf(thread), { reply: "Blocked by relevance_guardrail", tripwire: "relevance_guardrail", approvals: [] }, { tools: [], toolErrors: 0 }, "request");
   const entry = customerMessages(result)[0];
   expect(html(entry)).toContain("Blocked by a safety check");
   expect(html(entry)).not.toContain("AI assistant");

@@ -39,7 +39,7 @@ export const expectSchema = z
     /** An escalation ticket was opened (by the agent's tool or by the escalation rules). */
     ticketCreated: z.boolean(),
     /** The conversation has an OPEN ticket in the store with this source and reason (who opened it: tool = "agent", code = "rule"). */
-    ticketOpened: z.object({ source: z.enum(["agent", "rule"]), reason: z.string() }),
+    ticketOpened: z.object({ source: z.enum(["agent", "rule"]).optional(), reason: z.string(), category: z.string().optional() }),
     /** The transcript holds an automatic-step line (code-written, not the model) that names the open ticket. */
     automaticStepShown: z.boolean(),
     /** Legacy presence of any widget; use typed checks for a particular form or picker. */
@@ -81,6 +81,8 @@ export const scenarioSchema = z.object({
   customerId: z.string(),
   /** Staff-only fixture applied through takeover/hand-back before the first turn, never a chat input. */
   staffNote: z.string().max(2000).optional(),
+  /** Existing ticket closed by a seeded consultant hand-back before the first customer turn. */
+  seedTicket: z.object({ reason: z.string(), summary: z.string() }).optional(),
   /**
    * Refunds that already exist when the conversation starts (eval only). They let a single turn test a
    * rule that depends on earlier money movements, without relying on what the model remembers.

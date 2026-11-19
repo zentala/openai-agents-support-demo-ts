@@ -46,7 +46,7 @@ export function RatingControls({ rated, disabled, onRate }: Props) {
         value={correction}
         onChange={(e) => setCorrection(e.target.value)}
         placeholder="Correction (optional)"
-        className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+        className="h-10 min-w-0 flex-1 rounded-none border-0 border-b border-zinc-900/20 bg-transparent px-2 py-1 text-sm placeholder:text-gray-400 focus-visible:border-zinc-900/40 focus-visible:outline-none focus-visible:ring-0"
       />
       {rated && <span className="text-xs text-zinc-600">rated {rated.rating} by {rated.ratedBy}</span>}
     </div>

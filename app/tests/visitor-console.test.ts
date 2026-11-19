@@ -23,6 +23,11 @@ import type { RunOutcome } from "@/lib/runtime/run-support";
 // Only resumed inference is mocked; HTTP authorization, RunState restore, decisions and audit stay real.
 const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
+const actionClassifier = vi.hoisted(() => ({ run: vi.fn(async () => [{ type: "refund" as const, stance: "done" as const, recipient_named: null }]) }));
+vi.mock("@/lib/guardrails/action-claims", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/guardrails/action-claims")>("@/lib/guardrails/action-claims")),
+  classifyActionClaims: actionClassifier.run,
+}));
 
 let own: Thread;
 let foreign: Thread;
@@ -109,7 +114,7 @@ it("lets a public visitor approve their own thread and resolves only that approv
   const ownAudit = listAudit().filter((record) => record.threadId === own.threadId);
   expect(ownAudit).toHaveLength(ownAuditCount + 1);
   expect(ownAudit.at(-1)).toMatchObject({ approvalId: own.threadId, decision: "approved", decidedBy: "Marta Nowak" });
-  expect(own.transcript.at(-1)?.text).toBe("Your synthetic refund was approved.");
+  expect(own.transcript.at(-1)?.text).toBe("Sorry, I can't confirm that a refund was approved.");
   expect(model.run).toHaveBeenCalledExactlyOnceWith(expect.any(RunState), expect.objectContaining({ threadId: own.threadId }), own.traceId);
 });
 

@@ -12,7 +12,7 @@ import { maskSensitiveText, normalizeInput, stripInvisible, type NormalizedInput
 import type { AddressDecision, SupportContext, WidgetSelection } from "@/lib/types";
 import { decideAddressChange, leftAddressFlow } from "@/lib/address/address-flow";
 import { MAX_HISTORY_ITEMS } from "@/lib/config";
-import { isPublicDemo, redactSecrets } from "@/lib/security/request-key";
+import { hasRequestApiKey, isPublicDemo, redactSecrets } from "@/lib/security/request-key";
 import { diffContext } from "./context-diff";
 import { applySelection } from "./selection";
 import { capHistory } from "./history";
@@ -29,6 +29,7 @@ import { automaticStep } from "@/lib/message-kinds";
 import { findOpenTicketForThread } from "@/lib/data/store";
 import { fillEmptyReply } from "./empty-reply";
 import { rememberRefundRequest, replyDecision, stageConversationOffer } from "./conversation-offers";
+import { isShortAffirmative } from "@/lib/escalation/delivery-dispute";
 
 const fail = (reply: string): RunOutcome => ({ reply, approvals: [], failed: reply, sender: automaticStep("Request refused") });
 
@@ -98,14 +99,18 @@ function beginTurn(baseCtx: SupportContext, rawText: string, selection?: WidgetS
   delete thread.pendingQuickReply;
   thread.latestTurnId = currentTurnId(thread.threadId);
   // A trace starts every incoming turn, including rejected choices; it never carries raw input.
+  const visitorTrace = isPublicDemo() && hasRequestApiKey();
   emitAgentEvent(baseCtx.threadId, { kind: "trace", traceId: thread.traceId,
-    url: isPublicDemo() ? "" : `https://platform.openai.com/traces/trace?trace_id=${thread.traceId}` });
+    url: isPublicDemo() && !visitorTrace ? "" : `https://platform.openai.com/traces/trace?trace_id=${thread.traceId}` });
   if (choice && !choice.ok) {
     reportError(thread.threadId, "InvalidSelection", choice.message, "quick reply");
     return recordFailure(thread, fail(choice.message));
   }
   const prepared = prepareText(thread, baseCtx, choice?.text ?? rawText, selection);
-  return prepared.ok ? { ...prepared, thread, declined: choice?.reply } : recordFailure(thread, prepared.outcome);
+  if (!prepared.ok) return recordFailure(thread, prepared.outcome);
+  thread.customerAgreedToConsultant = Boolean(thread.consultantOffered && isShortAffirmative(prepared.text));
+  delete thread.consultantOffered;
+  return { ...prepared, thread, declined: choice?.reply };
 }
 
 // INTERVIEW: normalize -> takeover check -> escalation rules -> input guardrails -> agents -> output guardrail. Defense in depth: each layer assumes the one before can fail.

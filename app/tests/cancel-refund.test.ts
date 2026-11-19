@@ -5,7 +5,7 @@
 import { RunContext } from "@openai/agents";
 import { beforeEach, describe, expect, it } from "vitest";
 import { addRefund, findOrderForCustomer, getCustomer, listRefunds, refundedSoFar, resetDemoData } from "@/lib/data/store";
-import { createThread } from "@/lib/runtime/threads";
+import { addTranscript, createThread } from "@/lib/runtime/threads";
 import { sessionContextOf } from "@/lib/runtime/session-context";
 import { cancelRefund } from "@/lib/tools/cancel-refund";
 import { createRefund } from "@/lib/tools/refund";
@@ -24,6 +24,16 @@ const create = (orderId = "1001", amount = 249) => createRefund.invoke(runFor("c
 beforeEach(() => resetDemoData());
 
 describe("cancel_refund lifecycle", () => {
+  it("refuses a refund when a delivered order is reported missing", async () => {
+    const thread = createThread("c-anna");
+    addTranscript(thread, { role: "customer", text: "Order 1003 never arrived." });
+    const result = unwrapData(await createRefund.invoke(new RunContext(sessionContextOf(thread)), JSON.stringify({
+      orderId: "1003", amount: 890, reason: "Please refund this order",
+    })));
+    expect(result).toMatchObject({ status: "REFUSED", code: "DELIVERY_DISPUTE_NEEDS_HUMAN" });
+    expect(listRefunds()).toHaveLength(0);
+  });
+
   it("cancels a real created refund, releases the limit and enables returning the order again", async () => {
     expect(unwrapData(await create())).toMatchObject({ status: "REFUND_CREATED", refundStatus: "pending_payout" });
     const record = listRefunds()[0];

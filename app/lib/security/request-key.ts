@@ -24,6 +24,12 @@ export function requestApiKey(): string | undefined {
   return key;
 }
 
+/** Boolean-only check for UI metadata; it never returns or persists the visitor's secret. */
+export function hasRequestApiKey(): boolean {
+  const key = scope.getStore()?.key;
+  return Boolean(key && key.length <= 512 && /^sk-[A-Za-z0-9_-]+$/.test(key));
+}
+
 /** Redact the exact request secret and recognizable keys, including provider-error fragments. */
 export function redactSecrets(text: string): string {
   const key = scope.getStore()?.key;

@@ -12,7 +12,7 @@ import { contextFieldsOf, customerLanguageOf, handlerOf, openTicketOf, verifiedC
 import { useSupportSession } from "@/lib/client/use-support-session";
 import { useScenarioPlayback } from "@/lib/client/use-scenario-playback";
 
-export function SupportDemo({ publicSessionSecret }: { publicSessionSecret: boolean }) {
+export function SupportDemo({ publicSessionSecret, publicDemo }: { publicSessionSecret: boolean; publicDemo: boolean }) {
   const session = useSupportSession();
   const scenario = useScenarioPlayback(session);
 
@@ -27,7 +27,7 @@ export function SupportDemo({ publicSessionSecret }: { publicSessionSecret: bool
 
   return (
     <main className="demo-layout flex min-h-screen flex-col gap-2 p-2 lg:h-screen lg:flex-row">
-      <Workspace events={session.events} busy={scenario.busy} onScenario={(next) => void scenario.run(next)}>
+      <Workspace events={session.events} threadId={session.threadId} busy={scenario.busy} publicDemo={publicDemo} onScenario={(next) => void scenario.run(next)}>
         <AgentPanel threadId={session.threadId} events={session.events} context={context} inspector={session.inspector} publicSessionSecret={publicSessionSecret} replySent={!session.busy && session.messages.at(-1)?.role === "assistant"} />
       </Workspace>
       <CustomerView

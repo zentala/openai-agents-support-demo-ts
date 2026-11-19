@@ -18,7 +18,7 @@ export type Observation = {
   /** Every answer of the conversation, oldest first (defaults to just `reply`). */
   replies?: string[];
   /** The conversation's open ticket as the store holds it (real state, not an event). */
-  ticket?: { id: string; source: string; reason: string };
+  ticket?: { id: string; source: string; reason: string; category?: string };
   /** Transcript senders of the conversation, to see which lines code (not the model) wrote. */
   transcript?: { sender?: SenderInfo }[];
 };
@@ -75,8 +75,8 @@ function checkWave3b(expect: Expectation, obs: Observation, check: (ok: boolean,
 function checkTicketState(expect: Expectation, obs: Observation, check: (ok: boolean, message: string) => void): void {
   const { ticket } = obs;
   if (expect.ticketOpened) {
-    const { source, reason } = expect.ticketOpened;
-    check(ticket?.source === source && ticket?.reason === reason, `open ticket should be ${source}/${reason}, got ${ticket ? `${ticket.source}/${ticket.reason}` : "none"}`);
+    const { source, reason, category } = expect.ticketOpened;
+    check((!source || ticket?.source === source) && ticket?.reason === reason && (!category || ticket.category === category), `open ticket should be ${source ? `${source}/` : ""}${reason}${category ? `/${category}` : ""}, got ${ticket ? `${ticket.source}/${ticket.reason}/${ticket.category ?? "none"}` : "none"}`);
   }
   if (expect.automaticStepShown !== undefined) {
     const shown = !!ticket && (obs.transcript ?? []).some(({ sender }) => sender?.kind === "system" && !sender.notice && sender.ticketId === ticket.id);

@@ -4,7 +4,7 @@
  * Related surfaces share a key, while each registered glyph has exactly one meaning.
  */
 import {
-  Activity, ArrowRightLeft, BadgeDollarSign, Ban, BookOpen, BookText, Bot, Camera,
+  Activity, ArrowRightLeft, BadgeCheck, BadgeDollarSign, Ban, BookOpen, BookText, Bot, Camera,
   CalendarDays, Check, ChevronDown, ChevronRight, Circle, CircleCheck, CircleX, ClipboardList,
   Clock3, Cog, Copy, Download, Eraser, ExternalLink, Eye, EyeOff, FilePenLine, Headset, Hourglass,
   Info, KeyRound, Languages, LayoutList, LifeBuoy, ListOrdered, ListVideo, Lock, Mail, MapPin, MessagesSquare, MonitorPlay,
@@ -31,7 +31,7 @@ export const ICONS = {
   expand: ChevronRight, collapse: ChevronDown, external: ExternalLink,
   like: ThumbsUp, dislike: ThumbsDown, inputCleanup: Eraser, info: Info,
   retry: RotateCw, upload: Upload, download: Download, show: Eye, hide: EyeOff,
-  copy: Copy, customer: User, escalation: LifeBuoy,
+  copy: Copy, customer: User, claim: BadgeCheck, escalation: LifeBuoy,
   previousStep: SkipBack, nextStep: SkipForward, github: GitHubMark,
   bookCall: CalendarDays, contact: Mail, apiKey: KeyRound,
   shows: ScanEye,

@@ -28,7 +28,7 @@ Choose a UI example to start a fresh conversation, or pass stable IDs to `just e
 
 <!-- scenarios:generated:start -->
 
-All 49 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
+All 54 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
 
 Steps count customer messages. Widget clicks and consultant decisions are additional actions. UI + eval examples appear in the start screen and Scenarios menu; eval-only examples require fixture setup.
 
@@ -68,7 +68,7 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 </details>
 
 <details>
-<summary>Human handoff (8)</summary>
+<summary>Human handoff (9)</summary>
 
 | Scenario | Stable ID | Steps | Availability |
 | --- | --- | --- | --- |
@@ -80,6 +80,7 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 | Complain without asking for a person | `angry-no-keywords` | 1 | UI + eval |
 | Ask what happens after escalation | `escalation-next-step` | 1 | UI + eval |
 | Follow a consultant's private note | `staff-handback-context` | 1 | Eval only (fixture setup) |
+| Complain after a consultant hands back | `consultant-complaint-after-handback` | 1 | Eval only (fixture setup) |
 
 </details>
 
@@ -106,7 +107,7 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 </details>
 
 <details>
-<summary>Orders (4)</summary>
+<summary>Orders (8)</summary>
 
 | Scenario | Stable ID | Steps | Availability |
 | --- | --- | --- | --- |
@@ -114,6 +115,10 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 | Choose from my orders | `order-picker` | 1 | UI + eval |
 | Keep the selected order during handoff | `handoff-context` | 1 | UI + eval |
 | Read my current delivery address | `order-delivery-address` | 1 | UI + eval |
+| Dispute a delivered order in Polish | `delivery-dispute-pl` | 4 | UI + eval |
+| Dispute a delivered order in English | `delivery-dispute-en` | 3 | UI + eval |
+| Insist twice without agreeing to a consultant | `delivery-dispute-insists-twice` | 3 | UI + eval |
+| Agree to a consultant about missing delivery | `delivery-dispute-agrees-to-consultant` | 2 | UI + eval |
 
 </details>
 

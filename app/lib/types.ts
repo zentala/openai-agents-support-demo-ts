@@ -171,7 +171,8 @@ export type AgentEventBody =
   /** A secure form stored a value in the vault. Only the status text is shown, never the value. */
   | { kind: "sensitive_stored"; field: "iban" | "phone"; status: string }
   | { kind: "error"; errorType: string; message: string; where: string }
-  | { kind: "trace"; traceId: string; url: string };
+  | { kind: "trace"; traceId: string; url: string }
+  | { kind: "unbacked_claim_blocked"; claimType: "escalation" | "refund" | "claim" | "address" | "report" };
 
 export type AgentEvent = AgentEventBody & { id: string; ts: number; turnId?: string };
 

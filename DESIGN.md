@@ -192,6 +192,7 @@ describe their historical choices; this generated vocabulary is the active mappi
 | `hide` | EyeOff |
 | `copy` | Copy |
 | `customer` | User |
+| `claim` | BadgeCheck |
 | `escalation` | LifeBuoy |
 | `previousStep` | SkipBack |
 | `nextStep` | SkipForward |
@@ -337,6 +338,14 @@ Implementation and pending independent visual review: [H07 report](.plan/handoff
   second, code third.
 
 ## Decisions
+
+### Customer tab — coordinator review round 1
+
+Customer section headers use the existing semantic icon scale: 16px blue icons in the standard tinted icon chip. The Customer identity key remains `customer` (User), distinct from `guest` (UserRoundSearch). “What the agent knows” uses the same two-column key/value tile treatment as Conversation Context and includes language, verification, ticket state, active order and handoff reason. Empty data uses a light, sentence-style `text-sm text-zinc-600` state without a card. A verified guest sees only the address on the order they proved; the profile default address is omitted.
+
+| Changed | Replaces | Why |
+|---|---|---|
+| Add an icon to each customer section and show the agent context as compact key/value tiles; omit profile default addresses for verified guests. | Plain section headings, one combined context sentence and customer default address exposed alongside guest order data. | Improve scanning while keeping the guest projection within the verified order boundary. |
 
 Recording correction, 2026-11-16: gallery and README frames must come from a local app
 with a private random SESSION_SECRET generated in process memory. Do not hide the default

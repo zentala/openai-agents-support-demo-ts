@@ -18,6 +18,11 @@ import { resolveApproval } from "@/lib/runtime/approval-flow";
 
 const model = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("@/lib/runtime/run-support", () => ({ executeSupportRun: model.run }));
+const actionClassifier = vi.hoisted(() => ({ run: vi.fn(async () => []) }));
+vi.mock("@/lib/guardrails/action-claims", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/guardrails/action-claims")>("@/lib/guardrails/action-claims")),
+  classifyActionClaims: actionClassifier.run,
+}));
 const { handleUserMessage } = await import("@/lib/runtime/turn");
 let thread: Thread;
 const send = (text: string) => handleUserMessage(sessionContextOf(thread), text);

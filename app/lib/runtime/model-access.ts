@@ -7,8 +7,11 @@ export function createRequestRunner(options: Partial<RunConfig> = {}): Runner {
   const apiKey = requestApiKey();
   // SECURITY: pin the official endpoint; do not inherit the owner's organization or project.
   const modelProvider = apiKey ? new OpenAIProvider({ openAIClient: visitorClient(apiKey) }) : undefined;
-  return new Runner({ ...options, modelProvider, tracingDisabled: isPublicDemo() });
+  return new Runner({ ...options, modelProvider, tracingDisabled: isPublicDemo() && !apiKey });
 }
+
+/** Agents SDK 0.21 accepts the trace exporter key per run; never place this value in context or events. */
+export const requestTracingApiKey = (): string | undefined => isPublicDemo() ? requestApiKey() : undefined;
 
 function visitorClient(apiKey: string): OpenAI {
   return new OpenAI({ apiKey, baseURL: "https://api.openai.com/v1", organization: null, project: null });

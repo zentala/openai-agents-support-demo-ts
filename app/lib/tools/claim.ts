@@ -113,7 +113,7 @@ export const submitClaim = tool<z.ZodObject<Record<string, never>>, SupportConte
     if (claim.photoId && !listPhotos().some((p) => p.id === claim.photoId && p.threadId === session.threadId)) {
       return asData("submit_claim", { status: "REFUSED", code: "PHOTO_NOT_FOUND", message: "The attached photo is not available." });
     }
-    const record = addClaim({ customerId: session.customerId, ...claim });
+    const record = addClaim({ customerId: session.customerId, threadId: session.threadId, ...claim });
     const thread = getThread(session.threadId);
     if (thread) delete thread.claimPhotoOffered;
     session.claimDraft = undefined;

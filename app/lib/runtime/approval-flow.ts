@@ -55,5 +55,5 @@ async function decideAndResume(request: ApprovalRequest, approved: boolean, deci
   const observed = stopObserving();
   const thread = getThread(request.threadId);
   // Without a thread (server restarted in between) there is no chat to push to; the audit record still exists.
-  return { ok: true, request, outcome: thread ? finishTurn(thread, decision.ctx, outcome, observed, "push") : outcome };
+  return { ok: true, request, outcome: thread ? await finishTurn(thread, decision.ctx, outcome, observed, "push") : outcome };
 }
