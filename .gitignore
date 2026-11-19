@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env*
+!.env.example
+*.log
+examples/
+# Temporary local material: research notes, test screenshots, the owner's CodeTour.
+research/
+docs/screenshots/
+.tours/
+.cache/
+*.tsbuildinfo
+PREP.md

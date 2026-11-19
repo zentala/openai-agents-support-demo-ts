@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Mock: rule vs AI messages</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; background: #f3f4f6; color: #18181b; }
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; }
+  .col h2 { font-size: 15px; margin: 0 0 8px; color: #52525b; font-weight: 600; }
+  .col h2 b { color: #18181b; }
+  .panel { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.06); border: 1px solid #e5e7eb; }
+  .head { background: #2563eb; color: #fff; padding: 14px 16px; font-weight: 700; font-size: 18px; }
+  .chat { padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 560px; font-size: 16px; line-height: 1.5; }
+  .scn { text-align: center; font-size: 12px; color: #71717a; font-style: italic; }
+  .me { align-self: flex-end; background: #f3f4f6; border-radius: 18px; padding: 8px 14px; max-width: 80%; }
+  .agent-old { max-width: 85%; }
+  .who { font-size: 12px; font-weight: 600; color: #52525b; display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .who svg { width: 14px; height: 14px; }
+  .ai { max-width: 85%; }
+  .ai .who { color: #2563eb; }
+  /* Rule result: a receipt, not speech. Centered, no speaker, no bubble. */
+  .rule { align-self: center; width: 92%; border: 1px solid #e4e4e7; background: #fafafa; border-radius: 10px; padding: 12px 14px; display: grid; grid-template-columns: 32px 1fr; gap: 4px 10px; font-size: 14px; }
+  .rule .ic { grid-row: span 3; width: 32px; height: 32px; border-radius: 8px; background: #fef3c7; color: #b45309; display: grid; place-items: center; }
+  .rule .ic svg { width: 18px; height: 18px; }
+  .rule .t { font-weight: 600; font-size: 15px; }
+  .rule .d { color: #52525b; }
+  .rule .src { display: flex; align-items: center; gap: 6px; color: #71717a; font-size: 12px; }
+  .rule .src svg { width: 13px; height: 13px; }
+  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; margin-left: 6px; font-weight: 500; }
+  .rule2 { align-self: center; width: 92%; border: 1px solid #e4e4e7; background: #fafafa; border-radius: 10px; padding: 10px 14px; display: grid; grid-template-columns: 32px 1fr; gap: 4px 10px; font-size: 14px; align-items: center; }
+  .rule2 .ic { grid-row: span 2; width: 32px; height: 32px; border-radius: 8px; background: #fef3c7; color: #b45309; display: grid; place-items: center; }
+  .rule2 .ic svg { width: 18px; height: 18px; }
+  .rule2 .row1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rule2 .t { font-weight: 600; font-size: 15px; }
+  .rule2 .d { color: #52525b; }
+  /* GitHub-style segmented badge: label | id | status */
+  .seg { display: inline-flex; font-size: 12px; line-height: 20px; border-radius: 6px; overflow: hidden; border: 1px solid #fcd34d; }
+  .seg span { padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; }
+  .seg svg { width: 12px; height: 12px; }
+  .seg .s1 { background: #fde68a; color: #78350f; font-weight: 600; }
+  .seg .s2 { background: #fffbeb; color: #18181b; font-family: ui-monospace, Consolas, monospace; border-left: 1px solid #fcd34d; }
+  .seg .s3 { background: #fef3c7; color: #92400e; border-left: 1px solid #fcd34d; }
+  .auto { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 20px; padding: 0 8px; border-radius: 6px; background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7; }
+  .auto svg { width: 12px; height: 12px; }
+  .cite { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; padding: 0 8px; border-radius: 999px; background: #f3f4f6; border: 1px solid #d1d5db; color: #1d4ed8; font-weight: 500; vertical-align: middle; }
+  .cite svg { width: 13px; height: 13px; }
+  .event { align-self: stretch; display: flex; align-items: center; gap: 10px; color: #71717a; font-size: 13px; }
+  .event::before, .event::after { content: ""; flex: 1; height: 1px; background: #e4e4e7; }
+  .event svg { width: 14px; height: 14px; }
+  .human { max-width: 80%; }
+  .human .who { color: #047857; }
+  .human .b { background: #d1fae5; border-radius: 18px; padding: 8px 14px; display: inline-block; }
+  .note { font-size: 13px; color: #3f3f46; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; margin-top: 12px; line-height: 1.5; }
+  .note b { color: #18181b; }
+  .bad { color: #b91c1c; font-weight: 600; }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></symbol>
+  <symbol id="ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 0 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/></symbol>
+  <symbol id="cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V21h16"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+</svg>
+<div class="wrap">
+  <div class="col">
+    <h2><b>Now</b> — the rule's text looks like the agent talking</h2>
+    <div class="panel"><div class="head">Customer View</div>
+      <div class="chat">
+        <div class="scn">Scenario: Asks for a human</div>
+        <div class="me">I would like to talk to a human, please.</div>
+        <div class="agent-old">I have passed your case to a human colleague (ticket T-2002). They will contact you as soon as possible.</div>
+        <div class="me">Thanks. Meanwhile, how long do I have to return a chair?</div>
+        <div class="agent-old">You have 30 days from delivery to return an item [returns-policy].</div>
+      </div>
+    </div>
+    <div class="note"><span class="bad">Problem:</span> both answers look the same. The first was written by code (a fixed rule), the second by the AI model. Nobody can tell which is which.</div>
+  </div>
+  <div class="col">
+    <h2><b>Proposal</b> — speech has a speaker, actions are receipts</h2>
+    <div class="panel"><div class="head">Customer View</div>
+      <div class="chat">
+        <div class="scn">Scenario: Asks for a human</div>
+        <div class="me">I would like to talk to a human, please.</div>
+        <div class="rule2">
+          <div class="ic"><svg><use href="#ticket"/></svg></div>
+          <div class="row1">
+            <span class="t">Passed to a human</span>
+            <span class="seg"><span class="s1"><svg><use href="#ticket"/></svg>Ticket</span><span class="s2">T-2002</span><span class="s3">waiting</span></span>
+            <span class="auto"><svg><use href="#cog"/></svg>Automatic step</span>
+          </div>
+          <div class="d">A consultant will join this chat. You can keep writing in the meantime.</div>
+        </div>
+        <div class="me">Thanks. Meanwhile, how long do I have to return a chair?</div>
+        <div class="ai"><div class="who"><svg><use href="#spark"/></svg>AI assistant</div>You have 30 days from delivery to return an item <span class="cite"><svg><use href="#book"/></svg>Returns policy</span></div>
+        <div class="event"><svg><use href="#user"/></svg>Marta Nowak (human consultant) joined</div>
+        <div class="human"><div class="who"><svg><use href="#user"/></svg>Marta Nowak · human</div><div class="b">Hi, I'm here to help with your order.</div></div>
+      </div>
+    </div>
+    <div class="note"><b>Three kinds of message, three looks:</b><br>
+      1. <b>AI assistant</b> — plain text with an "AI assistant" label above every model answer.<br>
+      2. <b>Human</b> — green bubble with the person's name.<br>
+      3. <b>Automatic step</b> (rule in code) — not a message at all: a centered two-line card that reports what the system did, a segmented ticket badge (Ticket | ID | status) and a grey "Automatic step" badge. No speaker, no bubble.<br>
+      Sources the AI used are clickable chips with the article title; a click opens the article.<br>
+      Short status changes (someone joined or left) are thin centered lines.</div>
+  </div>
+</div>
+</body></html>

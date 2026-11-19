@@ -1,0 +1,290 @@
+{
+  "version": 1,
+  "source": "lucide-react and the official GitHub mark",
+  "license": "Lucide: ISC; GitHub: brand usage",
+  "viewBox": "0 0 24 24",
+  "icons": {
+    "agent": {
+      "glyph": "Bot",
+      "symbol": "icon-agent"
+    },
+    "consultant": {
+      "glyph": "Headset",
+      "symbol": "icon-consultant"
+    },
+    "howItWorks": {
+      "glyph": "Route",
+      "symbol": "icon-howItWorks"
+    },
+    "takeOver": {
+      "glyph": "UserCheck",
+      "symbol": "icon-takeOver"
+    },
+    "handBack": {
+      "glyph": "Undo2",
+      "symbol": "icon-handBack"
+    },
+    "send": {
+      "glyph": "SendHorizontal",
+      "symbol": "icon-send"
+    },
+    "ticket": {
+      "glyph": "Ticket",
+      "symbol": "icon-ticket"
+    },
+    "automaticStep": {
+      "glyph": "Cog",
+      "symbol": "icon-automaticStep"
+    },
+    "aiAssistant": {
+      "glyph": "Sparkles",
+      "symbol": "icon-aiAssistant"
+    },
+    "guardrail": {
+      "glyph": "ShieldExclamationPoint",
+      "symbol": "icon-guardrail"
+    },
+    "security": {
+      "glyph": "Shield",
+      "symbol": "icon-security"
+    },
+    "approval": {
+      "glyph": "Hourglass",
+      "symbol": "icon-approval"
+    },
+    "refund": {
+      "glyph": "BadgeDollarSign",
+      "symbol": "icon-refund"
+    },
+    "tool": {
+      "glyph": "Wrench",
+      "symbol": "icon-tool"
+    },
+    "handoff": {
+      "glyph": "ArrowRightLeft",
+      "symbol": "icon-handoff"
+    },
+    "knowledge": {
+      "glyph": "BookOpen",
+      "symbol": "icon-knowledge"
+    },
+    "error": {
+      "glyph": "TriangleExclamationPoint",
+      "symbol": "icon-error"
+    },
+    "address": {
+      "glyph": "MapPin",
+      "symbol": "icon-address"
+    },
+    "guest": {
+      "glyph": "UserRoundSearch",
+      "symbol": "icon-guest"
+    },
+    "dataCollection": {
+      "glyph": "ClipboardList",
+      "symbol": "icon-dataCollection"
+    },
+    "language": {
+      "glyph": "Languages",
+      "symbol": "icon-language"
+    },
+    "scenario": {
+      "glyph": "ListVideo",
+      "symbol": "icon-scenario"
+    },
+    "play": {
+      "glyph": "Play",
+      "symbol": "icon-play"
+    },
+    "pause": {
+      "glyph": "Pause",
+      "symbol": "icon-pause"
+    },
+    "replay": {
+      "glyph": "RotateCcw",
+      "symbol": "icon-replay"
+    },
+    "reset": {
+      "glyph": "RefreshCcw",
+      "symbol": "icon-reset"
+    },
+    "clear": {
+      "glyph": "Trash",
+      "symbol": "icon-clear"
+    },
+    "close": {
+      "glyph": "X",
+      "symbol": "icon-close"
+    },
+    "confirm": {
+      "glyph": "Check",
+      "symbol": "icon-confirm"
+    },
+    "cancel": {
+      "glyph": "Ban",
+      "symbol": "icon-cancel"
+    },
+    "passed": {
+      "glyph": "CircleCheck",
+      "symbol": "icon-passed"
+    },
+    "failed": {
+      "glyph": "CircleX",
+      "symbol": "icon-failed"
+    },
+    "idle": {
+      "glyph": "Circle",
+      "symbol": "icon-idle"
+    },
+    "waiting": {
+      "glyph": "Clock3",
+      "symbol": "icon-waiting"
+    },
+    "active": {
+      "glyph": "Activity",
+      "symbol": "icon-active"
+    },
+    "order": {
+      "glyph": "PackageSearch",
+      "symbol": "icon-order"
+    },
+    "product": {
+      "glyph": "Package",
+      "symbol": "icon-product"
+    },
+    "context": {
+      "glyph": "BookText",
+      "symbol": "icon-context"
+    },
+    "runLog": {
+      "glyph": "MessageSquareMore",
+      "symbol": "icon-runLog"
+    },
+    "audit": {
+      "glyph": "ScrollText",
+      "symbol": "icon-audit"
+    },
+    "conversation": {
+      "glyph": "MessagesSquare",
+      "symbol": "icon-conversation"
+    },
+    "widget": {
+      "glyph": "LayoutList",
+      "symbol": "icon-widget"
+    },
+    "contextUpdate": {
+      "glyph": "FilePenLine",
+      "symbol": "icon-contextUpdate"
+    },
+    "secureForm": {
+      "glyph": "Lock",
+      "symbol": "icon-secureForm"
+    },
+    "photo": {
+      "glyph": "Camera",
+      "symbol": "icon-photo"
+    },
+    "settings": {
+      "glyph": "Settings",
+      "symbol": "icon-settings"
+    },
+    "expand": {
+      "glyph": "ChevronRight",
+      "symbol": "icon-expand"
+    },
+    "collapse": {
+      "glyph": "ChevronDown",
+      "symbol": "icon-collapse"
+    },
+    "external": {
+      "glyph": "ExternalLink",
+      "symbol": "icon-external"
+    },
+    "like": {
+      "glyph": "ThumbsUp",
+      "symbol": "icon-like"
+    },
+    "dislike": {
+      "glyph": "ThumbsDown",
+      "symbol": "icon-dislike"
+    },
+    "inputCleanup": {
+      "glyph": "Eraser",
+      "symbol": "icon-inputCleanup"
+    },
+    "info": {
+      "glyph": "Info",
+      "symbol": "icon-info"
+    },
+    "retry": {
+      "glyph": "RotateCw",
+      "symbol": "icon-retry"
+    },
+    "upload": {
+      "glyph": "Upload",
+      "symbol": "icon-upload"
+    },
+    "download": {
+      "glyph": "Download",
+      "symbol": "icon-download"
+    },
+    "show": {
+      "glyph": "Eye",
+      "symbol": "icon-show"
+    },
+    "hide": {
+      "glyph": "EyeOff",
+      "symbol": "icon-hide"
+    },
+    "copy": {
+      "glyph": "Copy",
+      "symbol": "icon-copy"
+    },
+    "customer": {
+      "glyph": "User",
+      "symbol": "icon-customer"
+    },
+    "escalation": {
+      "glyph": "LifeBuoy",
+      "symbol": "icon-escalation"
+    },
+    "previousStep": {
+      "glyph": "SkipBack",
+      "symbol": "icon-previousStep"
+    },
+    "nextStep": {
+      "glyph": "SkipForward",
+      "symbol": "icon-nextStep"
+    },
+    "github": {
+      "glyph": "GitHubMark",
+      "symbol": "icon-github",
+      "source": "https://github.com/primer/octicons/blob/main/icons/mark-github-24.svg",
+      "license": "GitHub brand usage; trademark rights reserved"
+    },
+    "bookCall": {
+      "glyph": "CalendarDays",
+      "symbol": "icon-bookCall"
+    },
+    "contact": {
+      "glyph": "Mail",
+      "symbol": "icon-contact"
+    },
+    "apiKey": {
+      "glyph": "KeyRound",
+      "symbol": "icon-apiKey"
+    },
+    "shows": {
+      "glyph": "ScanEye",
+      "symbol": "icon-shows"
+    },
+    "steps": {
+      "glyph": "ListOrdered",
+      "symbol": "icon-steps"
+    },
+    "liveDemo": {
+      "glyph": "MonitorPlay",
+      "symbol": "icon-liveDemo"
+    }
+  }
+}

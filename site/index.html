@@ -1,0 +1,91 @@
+<!doctype html>
+<!-- Static scenario gallery. Real app recordings explain the system before visitors supply a model key. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Watch a TypeScript support agent handle orders, guardrails, approvals and human takeover, step by step.">
+  <title>Nordic Home · Support agent scenarios</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="gallery.mjs"></script>
+</head>
+<body>
+<a class="skip" href="#explorer">Skip to scenarios</a>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#human-request"><span data-icon="agent"></span>Nordic Home support agent</a>
+  <nav aria-label="Main navigation">
+    <a class="b ghost" href="https://github.com/zentala/openai-agents-support-demo-ts/blob/main/.plan/ARCH.md"><span data-icon="howItWorks"></span>How it works</a>
+    <a class="b" href="https://github.com/zentala/openai-agents-support-demo-ts"><span data-icon="github"></span>GitHub</a>
+    <a class="b" href="https://cal.com/zentala"><span data-icon="bookCall"></span>Book a call</a>
+    <a class="b primary" href="#live"><span data-icon="liveDemo"></span>Try it live</a>
+  </nav>
+</div></header>
+<main>
+  <section class="hero"><div class="wrap">
+    <h1>A customer-support AI agent that knows when to hand over to a human</h1>
+    <p class="hero-full">Three agents on the OpenAI Agents SDK answer from your policies, check orders and start refunds. Rules in code decide what the AI may never do alone. Pick a scenario below and watch a recorded run step by step. To try it live, use your own OpenAI key.</p>
+    <p class="hero-short">Watch three support agents handle orders, refunds and human handoffs. Choose a recorded scenario below, or try the live demo with your own OpenAI key.</p>
+    <div class="facts">
+      <span><span data-icon="consultant"></span>Human takeover &amp; approvals</span>
+      <span><span data-icon="guardrail"></span>Guardrails against prompt injection</span>
+      <span><span data-icon="scenario"></span>14 recorded scenarios</span>
+    </div>
+  </div></section>
+  <div class="explorer" id="explorer">
+    <aside aria-label="Recorded scenarios">
+      <div class="legend"><span class="legend-pair"><span class="k rule"><span data-icon="automaticStep"></span>rule</span>code decides</span><span class="legend-pair"><span class="k ai"><span data-icon="aiAssistant"></span>AI</span>model decides</span></div>
+      <div id="scenarios"></div>
+    </aside>
+    <section class="view" aria-labelledby="title">
+      <div class="crumb" id="crumb"></div>
+      <h2 id="title">Recorded scenarios</h2>
+      <p class="lead" id="lead">Loading the scenario gallery…</p>
+      <div class="meta" id="meta"></div>
+      <div role="alert" id="error" hidden></div>
+      <div class="grid" id="loaded" hidden>
+        <div class="player" id="player" role="region" aria-label="Scenario player" tabindex="0">
+          <div class="stage" id="stage"><div class="scene" id="scene">
+            <img id="frame" src="frames/human-request-1.webp" width="1440" height="900" alt="Recorded app screen">
+            <div class="spotlight" id="spotlight" aria-hidden="true"></div>
+          </div></div>
+          <div class="cap" id="cap" role="status" aria-live="polite"></div>
+          <div class="bar">
+            <button class="ib" id="prev" aria-label="Previous step" title="Previous step"><span data-icon="previousStep"></span></button>
+            <button class="ib main" id="play" aria-label="Play" title="Play">
+              <span data-play-icon="play" data-icon="play"></span><span data-play-icon="pause" data-icon="pause" hidden></span><span data-play-icon="replay" data-icon="replay" hidden></span>
+            </button>
+            <button class="ib" id="next" aria-label="Next step" title="Next step"><span data-icon="nextStep"></span></button>
+            <div class="track" id="track" aria-label="Jump to step"></div>
+          </div>
+          <div class="options">
+            <button class="b" id="plain" aria-pressed="false"><span data-icon="show"></span><span>Plain full frame</span></button>
+            <div class="speed"><span id="speed-label">Speed</span><div id="speed" role="radiogroup" aria-labelledby="speed-label">
+              <button type="button" role="radio" data-speed="0.5" aria-checked="false" tabindex="-1">0.5×</button><button type="button" role="radio" data-speed="1" aria-checked="true" tabindex="0">1×</button><button type="button" role="radio" data-speed="1.5" aria-checked="false" tabindex="-1">1.5×</button><button type="button" role="radio" data-speed="2" aria-checked="false" tabindex="-1">2×</button>
+            </div></div>
+          </div>
+        </div>
+        <div>
+          <ol class="steps" id="steps" aria-label="Scenario steps"></ol>
+          <div class="why"><h3><span data-icon="info"></span>Why it matters</h3><p id="why"></p></div>
+          <p class="keyboard">Focus the player; use ← / → for steps and Space to play or pause.</p>
+        </div>
+      </div>
+      <noscript>Enable JavaScript for the interactive player. The recorded frames and their captions are also available in <a href="data/scenarios.json">the scenario data</a>.</noscript>
+    </section>
+  </div>
+  <section class="live" id="live"><div class="wrap">
+    <h2>Try it live</h2><p>The live demo runs on your own OpenAI key. Model usage is billed to your account.</p>
+    <div class="three">
+      <div class="step"><h3><span data-icon="apiKey"></span>1. Get a key</h3><p>Create an API key in your OpenAI account.</p><div class="card-actions"><a class="b" href="https://platform.openai.com/api-keys"><span data-icon="external"></span>Create a key</a><a class="account-link" href="https://platform.openai.com/settings/organization/limits">Set a small spend limit</a></div></div>
+      <div class="step"><h3><span data-icon="liveDemo"></span>2. Open the demo</h3><p>Paste it into “Your OpenAI key” at the top of the chat. It stays in your browser tab and is sent to the demo server only for your requests.</p><div class="card-actions"><a class="b primary" id="live-demo" href="https://openai-agents-support-demo.onrender.com/"><span data-icon="liveDemo"></span>Open the live demo</a></div></div>
+      <div class="step"><h3><span data-icon="conversation"></span>3. Run a scenario</h3><p>Click “Scenarios” next to the message box and pick one, or type your own question. The Agent View panel explains each step.</p><div class="card-actions"><a class="b" href="https://github.com/zentala/openai-agents-support-demo-ts"><span data-icon="github"></span>Read the code</a></div></div>
+    </div>
+    <div class="stack"><span>TypeScript</span><span>OpenAI Agents SDK (JS)</span><span>Vercel AI SDK</span><span>Next.js</span><span>Playwright</span><span>MIT license</span></div>
+  </div></section>
+  <section class="cta"><div class="wrap">
+    <div><h2>Want an assistant like this for your business?</h2><p>I build support agents fitted to your products, policies and helpdesk — with human approval where money or data is at stake, and tests that prove it behaves. Tell me what your team answers every day.</p></div>
+    <div class="acts"><a class="b primary" href="https://cal.com/zentala"><span data-icon="bookCall"></span>Book a call</a><a class="b" href="https://zentala.agency/contact"><span data-icon="contact"></span>Contact</a></div>
+  </div></section>
+</main>
+<footer><div class="wrap">Built by Zentala Innovation Agency · Unofficial, not affiliated with OpenAI</div></footer>
+</body></html>

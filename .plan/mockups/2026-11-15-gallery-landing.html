@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Mock v2: landing + scenario explorer</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; color: #18181b; background: #fff; }
+  svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+  /* top bar */
+  .top { border-bottom: 1px solid #e5e7eb; }
+  .top .wrap { display: flex; align-items: center; height: 60px; gap: 10px; }
+  .brand { font-weight: 700; display: flex; gap: 8px; align-items: center; } .brand svg { color: #2563eb; width: 20px; height: 20px; }
+  .top nav { margin-left: auto; display: flex; gap: 8px; }
+  .b { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; color: #18181b; border: 1px solid #d4d4d8; background: #fff; }
+  .b.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .b.ghost { border-color: transparent; }
+  /* hero */
+  .hero { padding: 44px 0 28px; }
+  .hero h1 { font-size: 38px; line-height: 1.15; margin: 0 0 12px; max-width: 760px; letter-spacing: -.01em; }
+  .hero p { font-size: 17px; color: #3f3f46; max-width: 720px; line-height: 1.55; margin: 0 0 18px; }
+  .facts { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: #3f3f46; }
+  .facts span { display: inline-flex; gap: 7px; align-items: center; } .facts svg { color: #2563eb; }
+  /* explorer */
+  .explorer { display: grid; grid-template-columns: 300px 1fr; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+  aside { border-right: 1px solid #e5e7eb; padding: 18px 0 18px; background: #fafafa; }
+  .group { margin-bottom: 14px; }
+  .gh { display: flex; align-items: center; gap: 8px; padding: 6px 20px; font-size: 13px; font-weight: 700; color: #18181b; }
+  .gh .gi { width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; background: #eff6ff; color: #2563eb; }
+  .gh .n { margin-left: auto; font-size: 12px; color: #71717a; font-weight: 500; }
+  .it { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 7px 20px 7px 54px; font-size: 14px; color: #3f3f46; cursor: pointer; }
+  .it .num { font: 12px ui-monospace, Consolas, monospace; color: #71717a; }
+  .seg::after { content: ""; position: absolute; inset: -10px 0; }
+  button:focus-visible, a:focus-visible, .it:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+  .legend { display: flex; gap: 10px; padding: 0 20px 12px; font-size: 12px; color: #52525b; }
+  .it:hover { background: #f4f4f5; }
+  .it.active { background: #e8f0fe; color: #1d4ed8; font-weight: 600; }
+  .it.active .num { color: #1d4ed8; }
+  .k { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; font-weight: 500; }
+  .k svg { width: 11px; height: 11px; }
+  .k.rule { background: #f4f4f5; color: #52525b; } .k.ai { background: #eff6ff; color: #1d4ed8; }
+  section.view { padding: 22px 30px 28px; }
+  .crumb { font-size: 12px; color: #71717a; display: flex; gap: 6px; align-items: center; }
+  .view h2 { margin: 4px 0 6px; font-size: 26px; }
+  .lead { margin: 0 0 12px; color: #3f3f46; font-size: 15px; max-width: 760px; line-height: 1.5; }
+  .meta { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .meta span { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; padding: 4px 10px; border-radius: 6px; background: #f4f4f5; color: #3f3f46; }
+  .meta svg { width: 14px; height: 14px; color: #52525b; }
+  .grid { display: grid; grid-template-columns: 1fr 270px; gap: 20px; align-items: start; }
+  .player { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+  .stage { position: relative; overflow: hidden; background: #f3f4f6; aspect-ratio: 16 / 9; }
+  .stage img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; transition: transform .5s ease, transform-origin .5s ease; }
+  .cap { background: #18181b; color: #fff; padding: 12px 16px; font-size: 15px; line-height: 1.4; display: flex; gap: 10px; align-items: flex-start; }
+  .cap svg { margin-top: 2px; color: #93c5fd; }
+  .bar { height: 52px; background: #fff; border-top: 1px solid #e5e7eb; display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+  .ib { width: 34px; height: 34px; border-radius: 999px; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; color: #3f3f46; }
+  .ib:hover { background: #f4f4f5; }
+  .ib.main { background: #2563eb; color: #fff; } .ib.main svg { fill: currentColor; }
+  .track { flex: 1; display: flex; gap: 4px; margin: 0 8px; }
+  .seg { position: relative; flex: 1; height: 4px; border-radius: 2px; background: #e4e4e7; cursor: pointer; } .seg.done { background: #93c5fd; } .seg.cur { background: #2563eb; }
+  .speed { display: flex; border: 1px solid #e4e4e7; border-radius: 6px; overflow: hidden; }
+  .speed button { border: 0; background: #fff; font-size: 12px; min-height: 28px; min-width: 34px; cursor: pointer; color: #52525b; }
+  .speed button.on { background: #18181b; color: #fff; }
+  .steps { list-style: none; margin: 0; padding: 0; border-left: 1px solid #e5e7eb; }
+  .steps li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0 8px 14px; font-size: 14px; color: #71717a; cursor: pointer; }
+  .steps li .si { width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; background: #f4f4f5; color: #52525b; flex: none; }
+  .steps li.cur { color: #18181b; font-weight: 600; } .steps li.cur .si { background: #2563eb; color: #fff; }
+  .why { margin-top: 14px; font-size: 13px; color: #3f3f46; line-height: 1.5; padding: 12px 14px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; }
+  .why b { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; color: #18181b; }
+  .why code { font-size: 12px; background: #fff; border: 1px solid #e5e7eb; padding: 0 4px; border-radius: 4px; }
+  /* try live */
+  .live { padding: 40px 0; }
+  .live h3, .cta h3 { font-size: 24px; margin: 0 0 6px; }
+  .live > .wrap > p { color: #3f3f46; margin: 0 0 18px; }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .step { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; }
+  .step .hd { display: flex; gap: 10px; align-items: center; font-weight: 600; margin-bottom: 6px; }
+  .step .hd .gi { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: #eff6ff; color: #2563eb; }
+  .step p { margin: 0 0 10px; font-size: 14px; color: #52525b; line-height: 1.5; }
+  .step a { font-size: 14px; color: #1d4ed8; display: inline-flex; gap: 5px; align-items: center; }
+  .stack { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; font-size: 13px; color: #3f3f46; }
+  .stack span { padding: 4px 10px; background: #f4f4f5; border-radius: 6px; }
+  /* agency */
+  .cta { background: #18181b; color: #fff; padding: 36px 0; }
+  .cta .wrap { display: flex; align-items: center; gap: 28px; }
+  .cta p { color: #d4d4d8; margin: 0; max-width: 640px; line-height: 1.55; }
+  .cta .acts { margin-left: auto; display: flex; gap: 10px; }
+  .cta .b { border-color: #52525b; color: #fff; background: transparent; } .cta .b.primary { background: #fff; color: #18181b; border-color: #fff; }
+  footer { padding: 18px 0; font-size: 13px; color: #71717a; }
+  @media (max-width: 820px) {
+    .wrap { padding: 0 16px; } .hero h1 { font-size: 28px; }
+    .top nav .ghost, .top nav .b:not(.primary) { display: none; }
+    .explorer { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid #e5e7eb; order: 2; max-height: 360px; overflow-y: auto; }
+    section.view { order: 1; padding: 18px 16px; } .grid, .three { grid-template-columns: 1fr; }
+    .cta .wrap { flex-direction: column; align-items: flex-start; } .cta .acts { margin: 0; }
+    .speed button { min-width: 30px; }
+  }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></symbol>
+  <symbol id="fwd" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></symbol>
+  <symbol id="replay" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+  <symbol id="book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="headset" viewBox="0 0 24 24"><path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+  <symbol id="clip" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M10 12h11"/><path d="M10 18h11"/><path d="M10 6h11"/><path d="M4 10h2"/><path d="M4 6h1v4"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></symbol>
+  <symbol id="eye" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="key" viewBox="0 0 24 24"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+  <symbol id="mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+  <symbol id="ext" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></symbol>
+  <symbol id="ucheck" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M20 10c0 5-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 15 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="circplay" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></symbol>
+  <symbol id="bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+<div class="top"><div class="wrap">
+  <div class="brand"><svg class="i"><use href="#bot"/></svg>Nordic Home support agent</div>
+  <nav>
+    <a class="b ghost" href="#"><svg class="i"><use href="#book"/></svg>How it works</a>
+    <a class="b" href="#"><svg class="i"><use href="#github"/></svg>GitHub</a>
+    <a class="b" href="#"><svg class="i"><use href="#cal"/></svg>Book a call</a>
+    <a class="b primary" href="#live"><svg class="i"><use href="#circplay"/></svg>Try it live</a>
+  </nav>
+</div></div>
+<div class="hero"><div class="wrap">
+  <h1>A customer-support AI agent that knows when to hand over to a human</h1>
+  <p>Three agents on the OpenAI Agents SDK answer from your policies, check orders and start refunds. Rules in code decide what the AI may never do alone. Pick a scenario below and watch a recorded run step by step. To try it live, use your own OpenAI key.</p>
+  <div class="facts">
+    <span><svg class="i"><use href="#headset"/></svg>Human takeover &amp; approvals</span>
+    <span><svg class="i"><use href="#shield"/></svg>Guardrails against prompt injection</span>
+    <span><svg class="i"><use href="#check"/></svg>49 scenarios tested against real models</span>
+  </div>
+</div></div>
+<div class="explorer">
+  <aside>
+    <div class="legend"><span class="k rule"><svg class="i"><use href="#cog"/></svg>rule</span>code decides<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span>model decides</div>
+    <div class="group"><div class="gh"><span class="gi"><svg class="i"><use href="#headset"/></svg></span>Human handoff<span class="n">3</span></div>
+      <div class="it active"><span class="num">01</span>Talk to a person<span class="k rule"><svg class="i"><use href="#cog"/></svg>rule</span></div>
+      <div class="it"><span class="num">02</span>Upset customer<span class="k rule"><svg class="i"><use href="#cog"/></svg>rule</span></div>
+      <div class="it"><span class="num">03</span>Damage, refund, then a person<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div></div>
+    <div class="group"><div class="gh"><span class="gi"><svg class="i"><use href="#receipt"/></svg></span>Refunds &amp; approval<span class="n">3</span></div>
+      <div class="it"><span class="num">04</span>Return within the deadline<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div>
+      <div class="it"><span class="num">05</span>Refund that needs approval<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div>
+      <div class="it"><span class="num">06</span>Cancel a refund<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div></div>
+    <div class="group"><div class="gh"><span class="gi"><svg class="i"><use href="#shield"/></svg></span>Security &amp; guardrails<span class="n">3</span></div>
+      <div class="it"><span class="num">07</span>"Ignore your rules"<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div>
+      <div class="it"><span class="num">08</span>"Show your instructions"<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div>
+      <div class="it"><span class="num">09</span>Poisoned order note<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div></div>
+    <div class="group"><div class="gh"><span class="gi"><svg class="i"><use href="#clip"/></svg></span>Data collection<span class="n">2</span></div>
+      <div class="it"><span class="num">10</span>Damage claim step by step<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div>
+      <div class="it"><span class="num">11</span>Change a delivery address<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div></div>
+    <div class="group"><div class="gh"><span class="gi"><svg class="i"><use href="#user"/></svg></span>Guest mode<span class="n">1</span></div>
+      <div class="it"><span class="num">12</span>Verify, then ask<span class="k ai"><svg class="i"><use href="#spark"/></svg>AI</span></div></div>
+  </aside>
+  <section class="view">
+    <div class="crumb"><svg class="i"><use href="#headset"/></svg>Human handoff · 01</div>
+    <h2>Talk to a person</h2>
+    <p class="lead">A customer asks for a human. A rule in code opens a ticket before any AI runs. A consultant sees the whole conversation, takes over and replies, and the customer sees who answers.</p>
+    <div class="meta">
+      <span><svg class="i"><use href="#list"/></svg>4 steps</span>
+      <span><svg class="i"><use href="#cog"/></svg>Rule in code</span>
+      <span><svg class="i"><use href="#eye"/></svg>Shows: escalation, consultant console, takeover</span>
+    </div>
+    <div class="grid">
+      <div class="player">
+        <div class="stage"><img id="frame" src=""></div>
+        <div class="cap" id="cap"></div>
+        <div class="bar">
+          <button class="ib" id="prev" title="Previous step"><svg class="i"><use href="#back"/></svg></button>
+          <button class="ib main" id="play" title="Play"><svg class="i"><use href="#play"/></svg></button>
+          <button class="ib" id="next" title="Next step"><svg class="i"><use href="#fwd"/></svg></button>
+          <div class="track" id="track"></div>
+          <div class="speed" id="speed"><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="1.5">1.5×</button><button data-s="2">2×</button></div>
+        </div>
+      </div>
+      <div>
+        <ul class="steps" id="steps"></ul>
+        <div class="why"><b><svg class="i"><use href="#cog"/></svg>Why it matters</b>The decision to bring in a human is not left to the model. It is a rule in <code>lib/escalation/rules.ts</code>, so it works even when the AI is down.</div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="live" id="live"><div class="wrap">
+  <h3>Try it live</h3>
+  <p>The live demo runs on your own OpenAI key, so you pay only for what you try (usually a few cents).</p>
+  <div class="three">
+    <div class="step"><div class="hd"><span class="gi"><svg class="i"><use href="#key"/></svg></span>1. Get a key</div><p>Create an API key in your OpenAI account and set a small spend limit. A scenario costs a few cents.</p><a class="b" href="#"><svg class="i"><use href="#ext"/></svg>Create a key</a></div>
+    <div class="step"><div class="hd"><span class="gi"><svg class="i"><use href="#circplay"/></svg></span>2. Open the demo</div><p>Paste it into the "Your OpenAI key" field at the top of the chat. It stays in your browser tab and is never stored.</p><a class="b primary" href="#"><svg class="i"><use href="#circplay"/></svg>Open the live demo</a></div>
+    <div class="step"><div class="hd"><span class="gi"><svg class="i"><use href="#msg"/></svg></span>3. Run a scenario</div><p>Click "Scenarios" next to the message box and pick one, or type your own question. The Agent View panel explains each step.</p><a class="b" href="#"><svg class="i"><use href="#github"/></svg>Read the code</a></div>
+  </div>
+  <div class="stack"><span>TypeScript</span><span>OpenAI Agents SDK (JS)</span><span>Vercel AI SDK</span><span>Next.js</span><span>Playwright</span><span>MIT license</span></div>
+</div></div>
+<div class="cta"><div class="wrap">
+  <div><h3>Want an assistant like this for your business?</h3><p>I build support agents fitted to your products, policies and helpdesk — with human approval where money or data is at stake, and tests that prove it behaves. Tell me what your team answers every day.</p></div>
+  <div class="acts">
+    <a class="b primary" href="#"><svg class="i"><use href="#cal"/></svg>Book a call</a>
+    <a class="b" href="#"><svg class="i"><use href="#mail"/></svg>Contact</a>
+  </div>
+</div></div>
+<footer><div class="wrap">Built by Zentala Innovation Agency · Unofficial, not affiliated with OpenAI</div></footer>
+<script>
+  const S = "../../docs/screenshots/";
+  const steps = [
+    { img: "h11-c-start-1440.png", t: "Customer opens the chat", icon: "msg", c: "The customer opens the chat on the shop's website.", hold: 2500, z: [50, 0, 1] },
+    { img: "h12-automatic-1440.png", t: "Rule opens a ticket", icon: "cog", c: "\"I would like to talk to a human\" — a rule in code opens ticket T-2001. No AI involved.", hold: 3500, z: [80, 25, 1.45] },
+    { img: "h11-b-take-over-reply-1440.png", t: "Consultant takes over", icon: "headset", c: "The consultant sees the ticket and the whole conversation, then takes over and replies.", hold: 3500, z: [20, 40, 1.25] },
+    { img: "h12-human-1440.png", t: "Customer sees a person", icon: "ucheck", c: "The reply arrives signed by the consultant. Playback stops here.", hold: 0, z: [80, 30, 1.4] },
+  ];
+  let i = 0, timer = null, speed = 1;
+  const $ = (id) => document.getElementById(id);
+  const icon = (n) => `<svg class="i"><use href="#${n}"/></svg>`;
+  function show(n) {
+    i = n; $("frame").src = S + steps[i].img; const [ox, oy, sc] = steps[i].z; $("frame").style.transformOrigin = ox + "% " + oy + "%"; $("frame").style.transform = "scale(" + sc + ")";
+    $("cap").innerHTML = icon(steps[i].icon) + `<span>${steps[i].c}</span>`;
+    $("track").innerHTML = steps.map((_, k) => `<div class="seg ${k < i ? "done" : k === i ? "cur" : ""}" data-k="${k}"></div>`).join("");
+    $("steps").innerHTML = steps.map((s, k) => `<li class="${k === i ? "cur" : ""}" data-k="${k}"><span class="si">${icon(s.icon)}</span>${s.t}</li>`).join("");
+    document.querySelectorAll("[data-k]").forEach((d) => d.onclick = () => { stop(); show(+d.dataset.k); });
+  }
+  function setPlay(name) { $("play").innerHTML = icon(name); }
+  function stop() { clearTimeout(timer); timer = null; setPlay(i === steps.length - 1 ? "replay" : "play"); }
+  function tick() { if (i >= steps.length - 1) return stop(); show(i + 1); timer = setTimeout(tick, steps[i].hold / speed); }
+  $("play").onclick = () => { if (timer) return stop(); if (i === steps.length - 1) show(0); setPlay("pause"); timer = setTimeout(tick, steps[i].hold / speed); };
+  $("prev").onclick = () => { stop(); show(Math.max(0, i - 1)); };
+  $("next").onclick = () => { stop(); show(Math.min(steps.length - 1, i + 1)); };
+  document.querySelectorAll("#speed button").forEach((b) => b.onclick = () => { speed = +b.dataset.s; document.querySelectorAll("#speed button").forEach((x) => x.classList.toggle("on", x === b)); });
+  show(Number(new URLSearchParams(location.search).get("step") || 1));
+</script>
+</body></html>
