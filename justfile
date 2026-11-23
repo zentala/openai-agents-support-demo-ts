@@ -8,36 +8,46 @@ set windows-shell := ["pwsh", "-NoProfile", "-Command"]
 # pnpm and the tools behind it must not wait for prompts
 export CI := "true"
 
-with_key := "node scripts/with-key.mjs"
+with_key := "node " + quote(justfile_directory() / "scripts/with-key.mjs")
 
 # list recipes
 default:
     @just --list
 
+# Corepack picks the pnpm version from package.json in the current directory, so pnpm recipes run
+# inside app/. From the repository root (no package.json) Corepack would use its newest pnpm.
+
 # install dependencies
+[working-directory: 'app']
 setup:
-    corepack pnpm --dir app install
+    corepack pnpm install
 
 # dev server on http://127.0.0.1:3100
+[working-directory: 'app']
 dev:
-    {{with_key}} corepack pnpm --dir app dev
+    {{with_key}} corepack pnpm dev
 
+[working-directory: 'app']
 build:
-    corepack pnpm --dir app build
+    corepack pnpm build
 
+[working-directory: 'app']
 typecheck:
-    corepack pnpm --dir app typecheck
+    corepack pnpm typecheck
 
+[working-directory: 'app']
 lint:
-    corepack pnpm --dir app lint
+    corepack pnpm lint
 
 # unit tests (no network, no key)
+[working-directory: 'app']
 test:
-    corepack pnpm --dir app test
+    corepack pnpm test
 
 # run every scenario (or only the ids you pass) against the real agents and print a pass/fail table
+[working-directory: 'app']
 eval *ids:
-    {{with_key}} corepack pnpm --dir app eval {{ids}}
+    {{with_key}} corepack pnpm eval {{ids}}
 
 # gate before commit
 check: typecheck lint test

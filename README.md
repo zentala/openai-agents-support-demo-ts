@@ -261,7 +261,7 @@ export OPENAI_API_KEY="your-key"
 just dev
 ```
 
-Open the address printed by Next.js (port 3100). Agent, Consultant and How it works share one page; `/admin` redirects to `/?tab=consultant`. Without just, use `corepack pnpm --dir app install` and `corepack pnpm --dir app dev`.
+Open the address printed by Next.js (port 3100). Agent, Consultant and How it works share one page; `/admin` redirects to `/?tab=consultant`. Without just, run `corepack pnpm install` and `corepack pnpm dev` inside `app/` (Corepack reads the pinned pnpm version from the current directory).
 
 Before sharing a public instance, enable `PUBLIC_DEMO=true` and set a private `SESSION_SECRET`. Public console, inspector, tickets, approvals, audit, ratings and metrics are restricted to conversations whose signed cookies this browser holds. `ADMIN_PASSWORD` is optional and adds Basic authentication without widening that scope. Local/private mode keeps its staff-wide console and needs `ADMIN_PASSWORD` before sharing. State-changing requests still require the same origin. These are demo guards, not customer login.
 
@@ -350,7 +350,7 @@ card requirements and prices can change. No deployment is performed by these fil
 For browser smoke or screencast, install the matching Chromium once:
 
 ```sh
-corepack pnpm --dir app exec playwright install chromium
+cd app && corepack pnpm exec playwright install chromium
 ```
 
 Screencast also requires `ffmpeg` on PATH. It records the actual request-for-human → ticket → takeover → consultant reply flow in at most 20 seconds, then writes [docs/media/](docs/media/). The GIF stays below 3 MB. The default base URL is the local app on port 3100; pass another running host when needed. `PROXY_PAC` optionally supplies a proxy auto-config URL.
