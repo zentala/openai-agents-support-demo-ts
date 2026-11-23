@@ -1461,5 +1461,50 @@
       "ticketOpened": {"source": "agent", "reason": "consultant_complaint", "category": "consultant_complaint"},
       "replyNotMatches": ["right team", "right person", "department will", "handled by the right"]
     }
+  },
+  {
+    "id": "h16-manager-request-en",
+    "label": "Ask for a manager in English",
+    "category": "Human handoff",
+    "customerId": "c-james",
+    "message": "I want your manager, please.",
+    "expectedAnswer": "Confirm that the request is in the manager queue without promising a response time.",
+    "expect": { "ticketOpened": { "source": "rule", "reason": "manager_requested", "category": "manager_requested" }, "automaticStepShown": true }
+  },
+  {
+    "id": "h16-manager-request-pl",
+    "label": "Ask for a manager in Polish",
+    "category": "Human handoff",
+    "customerId": "c-anna",
+    "message": "Chcę rozmawiać z kierownikiem.",
+    "expect": { "ticketOpened": { "source": "rule", "reason": "manager_requested", "category": "manager_requested" }, "automaticStepShown": true }
+  },
+  {
+    "id": "h16-manager-request-de",
+    "label": "Ask for a manager in German",
+    "category": "Human handoff",
+    "customerId": "c-lena",
+    "message": "Ich möchte mit meinem Vorgesetzten sprechen.",
+    "expect": { "ticketOpened": { "source": "rule", "reason": "manager_requested", "category": "manager_requested" }, "automaticStepShown": true }
+  },
+  {
+    "id": "h16-report-ai-answer",
+    "label": "Report an incorrect AI answer",
+    "category": "Human handoff",
+    "customerId": "c-james",
+    "message": "How long do I have to return a chair?",
+    "followUps": ["I think that answer is wrong. Please report it."],
+    "expectedAnswer": "Confirm a report only after report_message returns REPORT_CREATED.",
+    "expect": { "toolsCalled": ["report_message"], "toolResultIncludes": ["REPORT_CREATED"], "ticketCreated": true }
+  },
+  {
+    "id": "h16-ask-person-answer",
+    "label": "Ask a person whether an answer is true",
+    "category": "Human handoff",
+    "customerId": "c-james",
+    "message": "How long do I have to return a chair?",
+    "followUps": ["Could a person check whether that answer is true?"],
+    "expectedAnswer": "Confirm the question was sent only after ask_a_person returns QUESTION_CREATED.",
+    "expect": { "toolsCalled": ["ask_a_person"], "toolResultIncludes": ["QUESTION_CREATED"], "ticketCreated": true }
   }
 ]

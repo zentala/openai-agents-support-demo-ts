@@ -14,7 +14,7 @@ export const GUARDRAIL_TRIP_LIMIT = 2;
 /** Two failed tool calls in one conversation: the system, not the customer, is the problem. */
 export const TOOL_ERROR_LIMIT = 2;
 
-export type EscalationReason = "legal_or_gdpr" | "human_requested" | "guardrail_trips" | "tool_errors";
+export type EscalationReason = "legal_or_gdpr" | "manager_requested" | "human_requested" | "guardrail_trips" | "tool_errors";
 
 export type EscalationSignals = {
   /** The customer's latest message (empty when only the counters should be judged). */
@@ -59,6 +59,15 @@ const HUMAN_PATTERNS: RegExp[] = [
   /\bechte[nr]?\s+mensch\w*/,
 ];
 
+const MANAGER_PATTERNS: RegExp[] = [
+  /\b(?:i want(?: to)?|i want to (?:speak|talk) to|can i (?:talk|speak) to|please let me (?:speak|talk) to|please (?:get|connect) me (?:a|with a)?|get me|speak to|talk to|connect me with)\s+(?:(?:your|the|a)\s+)?(?:manager|supervisor)\b/i,
+  /\b(?:chcę|chce)\s+rozmawiać\s+z\s+(?:moim\s+)?(?:przełożonym|kierownikiem)\b/i,
+  /\bpoproszę\s+(?:o\s+)?kierownika\b/i,
+  /\b(?:poprosz\w*|chc\w*\s+(?:rozmawiać|mówić)|daj(?:cie)?|dawaj)\s+(?:(?:mi|do)\s+)?(?:kierownik\w*|szef\w*)/i,
+  /\b(?:ich möchte|ich will|kann ich|bitte)\s+(?:(?:mit|den|dem|einen|einem)\s+)?(?:meinem |Ihrem |dem )?(?:vorgesetzten|supervisor|chef)\b/i,
+  /\b(?:chef|vorgesetzten),?\s+bitte\b/i,
+];
+
 const firstMatch = (patterns: RegExp[], text: string): string | undefined => {
   for (const pattern of patterns) {
     const found = pattern.exec(text);
@@ -72,6 +81,8 @@ export function decideEscalation({ text, guardrailTrips, toolErrors }: Escalatio
   const lowered = text.toLowerCase();
   const legal = firstMatch(LEGAL_PATTERNS, lowered);
   if (legal) return { escalate: true, reason: "legal_or_gdpr", detail: `legal/GDPR term "${legal}"` };
+  const manager = firstMatch(MANAGER_PATTERNS, text);
+  if (manager) return { escalate: true, reason: "manager_requested", detail: `asked for a manager ("${manager}")` };
   const human = firstMatch(HUMAN_PATTERNS, lowered);
   if (human) return { escalate: true, reason: "human_requested", detail: `asked for a person ("${human}")` };
   if (guardrailTrips >= GUARDRAIL_TRIP_LIMIT) {

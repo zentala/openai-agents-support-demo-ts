@@ -23,7 +23,7 @@ import { cancelRefund } from "@/lib/tools/cancel-refund";
 import { offerEscalationChoices, offerReplyChoices } from "@/lib/tools/reply-choices";
 import { requestBankAccount, requestCallbackPhone } from "@/lib/tools/secure-forms";
 import { verifyCustomer } from "@/lib/tools/verify-customer";
-import { escalateToHuman, searchKbTool } from "@/lib/tools/kb-and-escalation";
+import { escalateToHuman, searchKbTool, reportMessageTool, askPersonTool } from "@/lib/tools/kb-and-escalation";
 import type { SupportContext } from "@/lib/types";
 import { FAQ, ORDERS, TRIAGE } from "./catalog";
 import { applyHandoffInput, faqHandoffInput, ordersHandoffInput } from "./handoff-context";
@@ -44,7 +44,7 @@ const faqAgent = new Agent<SupportContext>({
   name: FAQ,
   handoffDescription: "Policy questions: returns rules, delivery, warranty, payments, assembly.",
   instructions: instructionsFor(FAQ_ROLE),
-  tools: [searchKbTool, escalateToHuman, offerEscalationChoices],
+  tools: [searchKbTool, escalateToHuman, offerEscalationChoices, reportMessageTool, askPersonTool],
 });
 
 export const ordersAgent = new Agent<SupportContext>({
@@ -52,7 +52,7 @@ export const ordersAgent = new Agent<SupportContext>({
   name: ORDERS,
   handoffDescription: "The customer's own orders, delivery status, returns and refunds.",
   instructions: instructionsFor(ORDERS_ROLE),
-  tools: [getOrder, listMyOrders, showOrderPicker, createRefund, cancelRefund, updateClaim, requestClaimPhoto, submitClaim, updateAddressChange, requestBankAccount, requestCallbackPhone, verifyCustomer, escalateToHuman, offerReplyChoices],
+  tools: [getOrder, listMyOrders, showOrderPicker, createRefund, cancelRefund, updateClaim, requestClaimPhoto, submitClaim, updateAddressChange, requestBankAccount, requestCallbackPhone, verifyCustomer, escalateToHuman, offerReplyChoices, reportMessageTool, askPersonTool],
 });
 
 // INTERVIEW: `handoff()` instead of a bare agent = a hook. The model passes a reason (and an order
@@ -71,7 +71,7 @@ export const triageAgent = new Agent<SupportContext, "text">({
   ...common,
   name: TRIAGE,
   instructions: instructionsFor(TRIAGE_ROLE),
-  tools: [escalateToHuman, offerEscalationChoices],
+  tools: [escalateToHuman, offerEscalationChoices, reportMessageTool, askPersonTool],
   handoffs: [toFaq, toOrders],
   inputGuardrails: [jailbreakGuardrail, relevanceGuardrail],
 });

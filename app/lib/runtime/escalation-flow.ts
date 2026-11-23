@@ -32,6 +32,12 @@ export function escalateByRule(
     source: "rule",
     reason: disputeOrder ? "delivery_dispute" : decision.reason,
     ...(disputeOrder ? { category: "delivery_dispute" as const } : {}),
+    ...(decision.reason === "manager_requested" ? { category: "manager_requested" as const } : {}),
   });
+  if (decision.reason === "manager_requested") {
+    ticket.category = "manager_requested";
+    ticket.reason = "manager_requested";
+  }
+  if (decision.reason === "manager_requested") return ctx.language === "pl" ? `Przekazuję tę rozmowę kierownikowi (zgłoszenie ${ticket.id}).` : ctx.language === "de" ? `Ich leite das Gespräch an die Leitung weiter (Ticket ${ticket.id}).` : `I'm passing this conversation to a manager (ticket ${ticket.id}).`;
   return created ? escalationNotice(ctx.language, ticket.id) : alreadyEscalatedNotice(ctx.language, ticket.id);
 }

@@ -184,6 +184,12 @@ See [ADR 011](ADR/011-hosting-and-public-demo.md) and the [README](../README.md#
 
 ## Architecture impact log
 
+- 2026-11-19 (H16 M1): staff reply moderation checks inflection-aware local insult stems, then classifies remaining text with the configured guardrail model; failures block delivery. The console records `reply_blocked` and retains the draft for correction.
+- 2026-11-19 (H16 M2): each thread tracks consecutive blocked drafts per staff member. Three create a manager-review ticket and lock that staff member; a manager can unlock them.
+- 2026-11-19 (H16 M3): deterministic manager-request phrases create a manager-requested ticket; staff can also escalate with a required reason. H16 adds staff-only reports and answer-question tickets tied to transcript messages.
+- 2026-11-19 (H16 M6): customers can request return to the assistant in English, Polish and German; consultant hand-back preserves open complaint and manager review tickets.
+- 2026-11-19 (H16 M4/M5): reports and questions are stored against a transcript message; customer claims require a matching report/question result or record on the same thread, never an unrelated ticket.
+
 2026-11-16: [ADR 013](ADR/013-recorded-scenario-gallery.md) adds the static gallery,
 shared editorial metadata and isolated browser recording. The live app's business and
 credential rules remain the authority; recorded screenshots add no support API.
@@ -214,6 +220,7 @@ when there is one.
 | 2026-11-11 | First consultant reply validates and takes over through one admin action; drafts bound to thread and consultant | Composer replaces header takeover buttons; selected-thread guards prevent stale text/actions during navigation | [004](ADR/004-human-in-the-loop.md) |
 | 2026-11-11 | Private hand-back instruction stored on its thread and rehydrated into fresh/resumed run context | Inspector/admin display only; customer transports filter the note, output leak checks cover it, and code rules retain authority | [004](ADR/004-human-in-the-loop.md), [005](ADR/005-thread-credential-and-event-channels.md) |
 | 2026-11-11 | Server tone warning before both staff reply actions, with explicit text/owner/thread-bound resend | First warning has no takeover/customer effects; private one-use acknowledgement and existing audit store track the decision | [004](ADR/004-human-in-the-loop.md) |
+| 2026-11-19 | Block staff replies using local insult stems followed by the configured guardrail model; classifier failure blocks sending | Rude or unverifiable replies never reach the customer; blocked attempts are audited | [014](ADR/014-block-staff-replies.md) |
 | 2026-11-11 | Customer & order panel reuses the guarded admin thread read with server-derived profile and selected order | Explicit fixture default address stays distinct from current delivery; guests and foreign cookies disclose no customer/order projection | [005](ADR/005-thread-credential-and-event-channels.md) |
 | 2026-11-11 | Run log groups masked customer turns and preserves origin across approval pause/resume | Async event scope supplies inspector-only turn metadata; unknown origins use Conversation updates and customer event projection strips correlation | [005](ADR/005-thread-credential-and-event-channels.md) |
 | 2026-11-11 | Explicit tool-created customer quick replies with one current offer per thread | Cookie/nonce/turn validation, deterministic decline and ordinary guarded refund-confirmation path; same widgets on normal/pushed answers | [003](ADR/003-business-rules-in-tool-code.md), [005](ADR/005-thread-credential-and-event-channels.md) |

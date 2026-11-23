@@ -22,7 +22,7 @@ import { escalateByRule } from "./escalation-flow";
 import { observeRun } from "./run-observer";
 import { executeSupportRun, type RunOutcome } from "./run-support";
 import { withSecureFormNotice } from "./secure-form-notice";
-import { routeToConsultant } from "./takeover";
+import { releaseTakeoverPreservingTickets, routeToConsultant } from "./takeover";
 import { addTranscript, assistantItem, threadFor, userItem, type Thread } from "./threads";
 import { finishTurn } from "./turn-finish";
 import { automaticStep } from "@/lib/message-kinds";
@@ -30,6 +30,8 @@ import { findOpenTicketForThread } from "@/lib/data/store";
 import { fillEmptyReply } from "./empty-reply";
 import { rememberRefundRequest, replyDecision, stageConversationOffer } from "./conversation-offers";
 import { isShortAffirmative } from "@/lib/escalation/delivery-dispute";
+import { wantsAssistant } from "./customer-intent";
+import { handBack } from "./takeover";
 
 const fail = (reply: string): RunOutcome => ({ reply, approvals: [], failed: reply, sender: automaticStep("Request refused") });
 
@@ -137,15 +139,20 @@ async function handleTurn(
     staffInstruction: thread.staffInstruction ? { ...thread.staffInstruction } : undefined };
   addTranscript(thread, { role: "customer", text });
 
+  // Explicit manager requests must escape human routing and enter the manager queue.
+  const early = decideEscalation({ text, guardrailTrips: 0, toolErrors: 0 });
   // A human is in charge: the agent must not answer. Enforced here in code, before any model call.
-  if (thread.takeover.status === "human") return routeToConsultant(thread, text);
+  if (thread.takeover.status === "human" && wantsAssistant(text)) {
+    handBack(thread.threadId, thread.takeover.consultant ?? "", "");
+  } else if (thread.takeover.status === "human" && early.escalate && early.reason === "manager_requested") {
+    releaseTakeoverPreservingTickets(thread, thread.takeover.consultant ?? "");
+  } else if (thread.takeover.status === "human") return routeToConsultant(thread, text);
   if (declined) return fixedAnswer(thread, text, declined, "Request declined");
 
   // The Confirm / Cancel click of an address change card is applied by code; no model call.
   if (selection?.type === "address") return answerAddressClick(thread, ctx, text, selection);
 
   // Legal/GDPR terms and explicit requests for a person never reach the model.
-  const early = decideEscalation({ text, guardrailTrips: 0, toolErrors: 0 });
   if (early.escalate) {
     delete thread.memory.addressDraft;
     const notice = escalateByRule(ctx, early, text);
@@ -170,3 +177,4 @@ async function handleTurn(
   // A bank account or phone number typed into the chat was masked above: code now points to the secure form.
   return finishTurn(thread, ctx, withSecureFormNotice(ctx, answered, sensitive, observed.tools), observed, "request");
 }
+

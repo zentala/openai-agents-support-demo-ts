@@ -22,7 +22,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ thre
   const allowedOrderId = thread.verifiedGuestOrderId;
   const orders = listOrdersForCustomer(customer.id).filter((order) => !allowedOrderId || order.id === allowedOrderId);
   const orderIds = new Set(orders.map((order) => order.id));
-  const tickets = listTickets().filter((row) => row.threadId === threadId);
+  const tickets = listTickets().filter((row) => row.threadId === threadId)
+    .map(({ id, category, status, createdAt }) => ({ id, category, status, createdAt }));
   const openTicket = tickets.find((ticket) => ticket.status === "open");
   const ticketState = openTicket
     ? thread.takeover.status === "human" ? `Taken over by ${thread.takeover.consultant} · ${openTicket.id}` : `Open in consultant queue · ${openTicket.id}`

@@ -9,9 +9,9 @@ import type { AgentEvent } from "@/lib/types";
 const ev = (body: object): AgentEvent => ({ id: crypto.randomUUID(), ts: 0, ...body }) as AgentEvent;
 
 describe("scenarios file", () => {
-  it("has the 38 original scenarios and eleven owner walkthrough scenarios with unique ids", () => {
-    expect(scenarios).toHaveLength(54);
-    expect(new Set(scenarios.map((s) => s.id)).size).toBe(54);
+  it("has the original scenarios plus the five H16 scenarios with unique ids", () => {
+    expect(scenarios).toHaveLength(59);
+    expect(new Set(scenarios.map((s) => s.id)).size).toBe(59);
   });
 
   it("show_order_picker is forbidden wherever the customer already named an order or an item", () => {

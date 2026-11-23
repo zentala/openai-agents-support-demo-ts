@@ -189,3 +189,8 @@ Newest entries at the bottom.
 - 2026-11-19: owner approved rewriting the public history. The public repo now has one commit (da4da7a) without research notes, test screenshots or CodeTour; CI passed. The private checkout keeps full history; the publish clone keeps tag backup-before-squash-2026-11-19.
 
 - 2026-11-19: owner approved H15 model spend ("tak"): new D2/D6 eval scenarios plus one full eval; a second full run needs the coordinator.
+
+## Finding 2026-11-23 — H15/H16 approved eval and model-backed browser check
+- Owner approved both spends ("tak"). One full eval covered both (59 scenarios): 57/59. The two failures were scenario defects: `h16-report-ai-answer` and `h16-ask-person-answer` had no prior AI answer, so `report_message`/`ask_a_person` refused correctly ("nothing to report"). Fixed with a first turn plus `followUps` (6c677bf); English/German manager scenarios now use customers whose profile language matches (the rule reply follows the profile language, not the message). Targeted rerun 4/4.
+- Environment: `corepack pnpm` resolves 11.28.13 and refuses the pinned 11.25.0, so `just` recipes fail; ran with plain `pnpm`. `with-key.mjs` needs `PASSWORD_BROKER_SCRIPT` set to find the broker (BACKLOG).
+- Browser check (local dev, 1440/390): ask a person, rude reply blocked by word list and by the model, three strikes and manager unlock, manager request, Back to assistant: PASS. Defect: report/ask confirmation unmounted with the form on success (`components/message-content.tsx`); status moved outside the form. Minor: customer ticket badge says "closed" while staff still review (BACKLOG).

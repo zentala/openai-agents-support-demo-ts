@@ -7,7 +7,7 @@ export type SenderInfo = {
   /** Join/leave notices use a thin line instead of an automatic-step receipt. */
   notice?: boolean;
 };
-export type CustomerMessage = { text: string; sender: SenderInfo };
+export type CustomerMessage = { id?: string; text: string; sender: SenderInfo };
 
 export const automaticStep = (title: string, ticketId?: string): SenderInfo => ({ kind: "system", title, ...(ticketId ? { ticketId } : {}) });
 

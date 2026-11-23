@@ -1,13 +1,13 @@
 /**
  * Builds the JSON the consultant console reads. Server only: it reads the in-memory stores.
  */
-import { getCustomer, listAudit, listRatings, listTickets } from "@/lib/data/store";
+import { getCustomer, listAudit, listMessageReports, listRatings, listTickets } from "@/lib/data/store";
 import { listPendingApprovals } from "@/lib/runtime/approvals";
 import { readEventLog } from "@/lib/runtime/event-bus";
 import { getThread } from "@/lib/runtime/threads";
 import { initialTakeover } from "@/lib/runtime/takeover-state";
 import { isAdminProtected } from "./auth";
-import { CONSULTANTS } from "./consultants";
+import { CONSULTANTS, isManager } from "./consultants";
 import { computeMetrics } from "./metrics";
 import type { AdminState, ThreadView } from "./types";
 import { canInspectThread } from "./visitor-access";
@@ -19,7 +19,7 @@ export const traceUrlFor = (traceId: string): string =>
 
 const nameOf = (customerId: string): string => getCustomer(customerId)?.name ?? customerId;
 
-export function buildAdminState(request?: Request): AdminState {
+export function buildAdminState(request?: Request, selectedStaff: string = CONSULTANTS[0]): AdminState {
   const visible = (threadId: string) => canInspectThread(request, threadId);
   const audit = listAudit().filter((record) => visible(record.threadId));
   const approvals = listPendingApprovals().filter((record) => visible(record.threadId));
@@ -30,6 +30,7 @@ export function buildAdminState(request?: Request): AdminState {
     // Newest ticket first: the queue a consultant works from the top.
     tickets: listTickets()
       .filter((ticket) => visible(ticket.threadId))
+      .filter((ticket) => isManager(selectedStaff) || !["manager_review", "manager_requested"].includes(ticket.category ?? ""))
       .map((ticket) => ({
         ...ticket,
         customerName: nameOf(ticket.customerId),
@@ -45,6 +46,7 @@ export function buildAdminState(request?: Request): AdminState {
       rejected: audit.filter((a) => a.decision === "rejected").length,
     }),
     ratingsCount: listRatings().filter((record) => visible(record.threadId)).length,
+    reports: listMessageReports().filter((record) => visible(record.threadId) && (isManager(selectedStaff) || record.author === "AI assistant")).reverse(),
   };
 }
 
@@ -68,5 +70,6 @@ export function buildThreadView(threadId: string, request?: Request): ThreadView
     staffInstruction: thread.staffInstruction,
     customerOrder: customerOrderOf(thread),
     ratings,
+    staffLockouts: thread.staffLockouts ?? [],
   };
 }

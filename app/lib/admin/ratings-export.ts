@@ -8,6 +8,8 @@
  */
 import type { RatingRecord } from "@/lib/data/store";
 import { scenarioSchema, type Expectation, type Scenario } from "@/lib/eval/scenarios";
+import type { MessageReportRecord } from "@/lib/data/store";
+import { getThread } from "@/lib/runtime/threads";
 
 const LABEL_LENGTH = 40;
 /** How much of a rejected answer is turned into a "must not match" pattern. */
@@ -40,4 +42,21 @@ export function ratingsToScenarios(ratings: RatingRecord[]): Scenario[] {
   });
   // Validate with the same schema as the scenarios file, so an export can always be pasted into it.
   return scenarios.map((s) => scenarioSchema.parse(s));
+}
+
+export function reportsToScenarios(reports: MessageReportRecord[]): Scenario[] {
+  const scenarios = reports.filter((report) => report.author === "AI assistant").map((report, index): Scenario | undefined => {
+    const thread = getThread(report.threadId);
+    if (!thread) return undefined;
+    return {
+      id: `reported-${index + 1}-${report.kind}`,
+      label: `${report.kind === "question" ? "Question" : "Reported answer"}: ${report.quote.slice(0, LABEL_LENGTH)}`,
+      category: "Human handoff",
+      customerId: thread.customerId,
+      message: report.kind === "question" ? report.reason : `I think this answer is wrong: ${report.quote}. ${report.reason}`,
+      expectedAnswer: report.quote,
+      expect: { toolsCalled: [report.kind === "question" ? "ask_a_person" : "report_message"], ticketCreated: true },
+    };
+  }).filter((scenario): scenario is Scenario => Boolean(scenario));
+  return scenarios.map((scenario) => scenarioSchema.parse(scenario));
 }

@@ -16,6 +16,7 @@ import { assistantItem, getThread, pushToCustomer, userItem, type Thread } from 
 import { reduceTakeover, type TakeoverAction } from "./takeover-state";
 import { MAX_INPUT_LENGTH } from "@/lib/config";
 import { redactSecrets } from "@/lib/security/request-key";
+import { isManager } from "@/lib/admin/consultants";
 
 export type ActionResult = { ok: true } | { ok: false; errorType: string; message: string };
 
@@ -40,9 +41,18 @@ function transition(threadId: string, action: TakeoverAction): ActionResult & { 
 export function takeOver(threadId: string, consultant: string): ActionResult {
   const result = transition(threadId, { type: "take", consultant, at: Date.now() });
   if (!result.ok || !result.thread) return result;
-  delete result.thread.pendingReplyWarning;
   delete result.thread.pendingQuickReply;
   announceTakeover(result.thread, consultant);
+  return { ok: true };
+}
+
+export function managerTakeOver(threadId: string, consultant: string): ActionResult {
+  if (!isManager(consultant)) return { ok: false, errorType: "ManagerOnly", message: "Only the manager can take over an active staff conversation." };
+  const thread = getThread(threadId);
+  if (!thread) return { ok: false, errorType: "UnknownThread", message: `No conversation ${threadId}` };
+  thread.takeover = { status: "human", consultant, since: Date.now() };
+  delete thread.pendingQuickReply;
+  announceTakeover(thread, consultant);
   return { ok: true };
 }
 
@@ -74,7 +84,6 @@ export function takeOverAndReply(threadId: string, consultant: string, text: str
   if (!next.ok) return next;
   // Future reply checks must run above this boundary, before either customer-visible effect.
   thread.takeover = next.state;
-  if (starting) delete thread.pendingReplyWarning;
   delete thread.pendingQuickReply;
   if (starting) announceTakeover(thread, consultant);
   appendReply(thread, consultant, text.trim());
@@ -85,7 +94,6 @@ export function handBack(threadId: string, consultant: string, note = ""): Actio
   if (note.length > MAX_INPUT_LENGTH) return { ok: false, errorType: "InvalidStaffNote", message: `Staff note must be at most ${MAX_INPUT_LENGTH} characters.` };
   const result = transition(threadId, { type: "release", consultant });
   if (!result.ok || !result.thread) return result;
-  delete result.thread.pendingReplyWarning;
   const text = redactSecrets(note.trim());
   result.thread.staffInstruction = text ? { text, consultant, updatedAt: new Date().toISOString() } : undefined;
   emitAgentEvent(threadId, { kind: "staff_instruction", instruction: result.thread.staffInstruction ?? null });
@@ -99,6 +107,17 @@ export function handBack(threadId: string, consultant: string, note = ""): Actio
   emitAgentEvent(threadId, { kind: "takeover", status: "agent", consultant });
   pushToCustomer(result.thread, { role: "system", text: handedBackNotice(languageOf(result.thread)) });
   return { ok: true };
+}
+
+/** Release a locked consultant without resolving the manager-review ticket. */
+export function releaseTakeoverPreservingTickets(thread: Thread, consultant: string): void {
+  if (thread.takeover.status !== "human" || thread.takeover.consultant !== consultant) return;
+  thread.takeover = { status: "agent" };
+  thread.handedBackBy = consultant;
+  thread.history.push(assistantItem(handedBackHistoryNote(consultant)));
+  thread.signals = { guardrailTrips: 0, toolErrors: 0 };
+  emitAgentEvent(thread.threadId, { kind: "takeover", status: "agent", consultant });
+  pushToCustomer(thread, { role: "system", text: handedBackNotice(languageOf(thread)) });
 }
 
 export function consultantReply(threadId: string, consultant: string, text: string): ActionResult {

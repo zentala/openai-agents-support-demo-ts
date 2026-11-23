@@ -2,11 +2,13 @@
 
 ## TLDR
 
+**Implementation report:** [H16 implementation and verification report](./H16-manager-moderation-message-reports-report.md).
+
 The owner wants the demo to show how a support team stays honest and polite: a consultant cannot
 send a rude reply, repeated attempts lock the consultant out and alert a manager, customers can ask
 for a manager, report a wrong AI answer or a rude consultant message, and ask a person about one
 specific answer. Starts after H15 is merged (both touch escalation and the console). Points:
-{ok. 28p}. Importance: High (M1, M2), Medium (M3–M6).
+{ok. 29p}. Importance: High (M1, M2), Medium (M3–M7).
 
 Observed 2026-11-19: consultant Marta Nowak sent "Cześć lamusie" ("hi, loser") and no warning
 appeared. Cause: `app/lib/admin/staff-reply.ts` checks a short whole-word list (`RUDE_WORDS`);
@@ -32,8 +34,9 @@ inflected Polish insults such as "lamusie" are not in it.
 | M4 | 5 | Medium | **Report a message.** Every AI and consultant message in the customer chat gets a small "Report" action (flag icon, new registry key) and the agents get a `report_message` tool for "I think this answer is wrong, report it". A report stores the quoted message, author kind (AI / consultant name), the customer's reason and creates an item in the console's new "Reports" section; reports about consultants go to the manager. The agent confirms only after the tool returns REPORT_CREATED (D1 guard covers this claim). AI-answer reports can be exported with the existing ratings → eval export. |
 | M5 | 5 | Medium | **Ask a person about this answer.** An "Ask a person" action on an AI message (and the agent tool path "ask a human whether this is true") opens a short question field; it creates a question ticket quoting that answer. The consultant answers from the console; the reply appears in the customer chat linked to the quoted answer ("About: …"). The AI keeps answering other messages meanwhile. |
 | M6 | 3 | Medium | **Customer ends the consultant chat.** "I don't want to talk to this consultant / back to the assistant" (rule, three languages) and a small "Back to assistant" button in the takeover banner hand the thread back to the AI, close the consultant's takeover, notify the console and keep the ticket open for the manager if a complaint was made. |
+| M7 | 1 | Medium | **Show the selected customer's profile before the first message.** While a selected customer's thread is opening, replace the "Start a conversation" placeholder with the existing loading state; the authenticated thread snapshot then shows profile, addresses and orders. A guest sees "Not verified yet" immediately. |
 
-Sum: 28 points.
+Sum: 29 points.
 
 ## Constraints and acceptance
 

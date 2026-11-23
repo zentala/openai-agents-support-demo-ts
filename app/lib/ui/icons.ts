@@ -4,7 +4,7 @@
  * Related surfaces share a key, while each registered glyph has exactly one meaning.
  */
 import {
-  Activity, ArrowRightLeft, BadgeCheck, BadgeDollarSign, Ban, BookOpen, BookText, Bot, Camera,
+  Activity, ArrowRightLeft, BadgeCheck, BadgeDollarSign, Ban, BookOpen, BookText, Bot, Camera, Flag,
   CalendarDays, Check, ChevronDown, ChevronRight, Circle, CircleCheck, CircleX, ClipboardList,
   Clock3, Cog, Copy, Download, Eraser, ExternalLink, Eye, EyeOff, FilePenLine, Headset, Hourglass,
   Info, KeyRound, Languages, LayoutList, LifeBuoy, ListOrdered, ListVideo, Lock, Mail, MapPin, MessagesSquare, MonitorPlay,
@@ -35,7 +35,7 @@ export const ICONS = {
   previousStep: SkipBack, nextStep: SkipForward, github: GitHubMark,
   bookCall: CalendarDays, contact: Mail, apiKey: KeyRound,
   shows: ScanEye,
-  steps: ListOrdered, liveDemo: MonitorPlay,
+  steps: ListOrdered, liveDemo: MonitorPlay, flag: Flag,
 } satisfies Record<string, LucideIcon>;
 
 export type IconKey = keyof typeof ICONS;

@@ -16,7 +16,7 @@ import type { Scenario } from "@/lib/eval/scenarios";
 import { ProductIcon } from "./product-icon";
 import { CustomerTab } from "./admin/customer-tab";
 
-export function Workspace({ events, threadId, children, busy, publicDemo, onScenario }: { events: AgentEvent[]; threadId: string | null; children: ReactNode; busy: boolean; publicDemo: boolean; onScenario: (scenario: Scenario) => void }) {
+export function Workspace({ events, threadId, selectedCustomerId, children, busy, publicDemo, onScenario }: { events: AgentEvent[]; threadId: string | null; selectedCustomerId: string; children: ReactNode; busy: boolean; publicDemo: boolean; onScenario: (scenario: Scenario) => void }) {
   const router = useRouter();
   const params = useSearchParams();
   const selected = params.get("tab");
@@ -61,7 +61,7 @@ export function Workspace({ events, threadId, children, busy, publicDemo, onScen
       </Tabs.List>
       <Tabs.Content value="agent" className="flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden">{children}</Tabs.Content>
       <Tabs.Content value="consultant" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><ConsultantPanel c={console} /></Tabs.Content>
-      <Tabs.Content value="customer" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><CustomerTab threadId={threadId} events={events} /></Tabs.Content>
+      <Tabs.Content value="customer" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><CustomerTab threadId={threadId} selectedCustomerId={selectedCustomerId} events={events} /></Tabs.Content>
       <Tabs.Content value="how" className="workspace-content min-h-0 flex-1 overflow-y-auto bg-gray-50"><HowItWorks busy={busy} onScenario={onScenario} /></Tabs.Content>
     </Tabs.Root>
   );

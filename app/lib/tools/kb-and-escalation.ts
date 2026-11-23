@@ -14,6 +14,25 @@ import { getThread } from "@/lib/runtime/threads";
 import type { SupportContext } from "@/lib/types";
 import { asData, sessionOf } from "./helpers";
 import { toolErrorHandler } from "./tool-error";
+import { createLatestMessageConcern } from "@/lib/runtime/message-concerns";
+
+export const reportMessageTool = tool<z.ZodObject<{ reason: z.ZodString }>, SupportContext>({
+  name: "report_message", description: "Report the latest AI answer as incorrect or inappropriate. Give the customer's short reason; never claim success unless the result is REPORT_CREATED.",
+  parameters: z.object({ reason: z.string().trim().min(3).max(300) }), errorFunction: toolErrorHandler("report_message"),
+  execute: async ({ reason }, runContext) => {
+    const result = createLatestMessageConcern(sessionOf(runContext).threadId, reason, "report");
+    return asData("report_message", result.ok ? "REPORT_CREATED" : `${result.errorType}: ${result.message}`);
+  },
+});
+
+export const askPersonTool = tool<z.ZodObject<{ question: z.ZodString }>, SupportContext>({
+  name: "ask_a_person", description: "Ask a human whether the latest AI answer is true. Attach the customer's specific question to that answer.",
+  parameters: z.object({ question: z.string().trim().min(3).max(300) }), errorFunction: toolErrorHandler("ask_a_person"),
+  execute: async ({ question }, runContext) => {
+    const result = createLatestMessageConcern(sessionOf(runContext).threadId, question, "question");
+    return asData("ask_a_person", result.ok ? "QUESTION_CREATED" : `${result.errorType}: ${result.message}`);
+  },
+});
 
 export const searchKbTool = tool<z.ZodObject<{ query: z.ZodString }>, SupportContext>({
   name: "search_kb",

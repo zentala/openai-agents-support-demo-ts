@@ -1,12 +1,12 @@
 "use client";
 
-/** Thread/consultant-keyed draft and explicit tone acknowledgement. Editing always clears consent. */
+/** Thread/consultant-keyed reply draft. A refused draft stays in the composer for editing. */
 import { useRef, useState } from "react";
 import type { ActionResponse } from "@/lib/admin/types";
 
-export function useReplyComposer(blocked: boolean, onReply: (text: string, acknowledgement?: string) => Promise<ActionResponse>) {
+export function useReplyComposer(blocked: boolean, onReply: (text: string) => Promise<ActionResponse>) {
   const [text, setText] = useState("");
-  const [warning, setWarning] = useState<{ id: string; text: string; message: string }>();
+  const [warning, setWarning] = useState<string>();
   const sending = useRef(false);
   const edit = (value: string) => { setText(value); setWarning(undefined); };
   const exclusive = async (work: () => Promise<void>) => {
@@ -14,13 +14,12 @@ export function useReplyComposer(blocked: boolean, onReply: (text: string, ackno
     sending.current = true;
     try { await work(); } finally { sending.current = false; }
   };
-  const send = async (anyway = false) => {
-    if (blocked || sending.current || !text.trim() || (warning && !anyway)) return;
-    if (anyway && (!warning || warning.text !== text)) return;
+  const send = async () => {
+    if (blocked || sending.current || !text.trim()) return;
     await exclusive(async () => {
-      const result = await onReply(text, anyway ? warning?.id : undefined);
+      const result = await onReply(text);
       if (result.ok) { setText(""); setWarning(undefined); }
-      else if (result.errorType === "StaffToneWarning" && result.warningId) setWarning({ id: result.warningId, text, message: result.message });
+      else setWarning(`${result.errorType}: ${result.message}`);
     });
   };
   return { text, warning, exclusive, edit, send };

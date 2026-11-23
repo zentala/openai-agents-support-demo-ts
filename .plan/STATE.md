@@ -11,7 +11,7 @@ updated: 2026-11-19T04:02:09
 
 H15 (open, 2026-11-19): [handoff](handoffs/H15-honest-claims-disputes-customer-tab.md) — block unbacked "I forwarded it" claims in code, a general rule for disputed records (delivered vs not received), diagnostics export, Customer tab, visible Open trace reason. Eval spend approved 2026-11-19.
 
-H16 (planned, after H15): [handoff](handoffs/H16-manager-moderation-message-reports.md) — block rude consultant replies, three strikes → manager, manager escalation, report a message, ask a person about an answer, back to assistant.
+H16 (2026-11-23): owner approved the eval spend. Full eval 57/59; the two failures were scenario defects (no prior answer to report), fixed in 6c677bf, rerun 4/4. Model-backed browser check PASS after one fix (report confirmation unmounted, 5373f32). Publishing to the public repo and Render next. H15 is published and live; the same full eval covered it. Plan: [handoff](handoffs/H16-manager-moderation-message-reports.md) — block rude consultant replies, three strikes → manager, manager escalation, report a message, ask a person about an answer, back to assistant.
 
 H14 private-session recording correction is complete locally. The recorder now starts
 its app with a random private SESSION_SECRET only in process memory and refuses a visible

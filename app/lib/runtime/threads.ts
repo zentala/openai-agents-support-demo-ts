@@ -53,8 +53,10 @@ export type Thread = {
   claimPhotoOffered?: boolean;
   /** Private staff guidance, separate from customer-visible transcript and model-mutable memory. */
   staffInstruction?: StaffInstruction;
-  /** One-shot staff acknowledgement, bound to this thread, consultant, action and exact validated text. */
-  pendingReplyWarning?: { id: string; consultant: string; text: string; action: "reply" | "take_over_and_reply" };
+  /** Consecutive blocked drafts per staff member; a delivered reply clears that member's count. */
+  blockedReplies?: Record<string, string[]>;
+  /** Consultants locked out after three blocked replies; manager action clears this list. */
+  staffLockouts?: string[];
   /** An address change waiting for the customer's Confirm click. Only the click can apply it. */
   pendingAddress?: { proposalId: string; orderId: string; oldAddress: Address; newAddress: Address };
   /** Guest verification attempts so far (server-side: the model cannot reset it). */

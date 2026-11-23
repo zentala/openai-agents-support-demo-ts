@@ -3,8 +3,9 @@ import { Icon } from "@/components/icon";
 import type { CustomerMessage } from "@/lib/message-kinds";
 import { ticketBadgeStatus, type TicketContext } from "@/lib/client/ticket-status";
 import { CitationText } from "./kb-sources";
+import { useState } from "react";
 
-export function MessageContent({ text, sender, customer = false, ticket }: CustomerMessage & { customer?: boolean; ticket?: TicketContext }) {
+export function MessageContent({ text, sender, customer = false, ticket, entryId, onConcern }: CustomerMessage & { customer?: boolean; ticket?: TicketContext; entryId?: string; onConcern?: (entryId: string, kind: "report" | "question", reason: string) => Promise<string> }) {
   if (sender.kind === "system" && sender.notice) return <p data-testid="message-system" data-message-kind="system"
     className="flex w-full items-center justify-center gap-2 text-center text-xs text-zinc-600 before:h-px before:flex-1 before:bg-gray-200 after:h-px after:flex-1 after:bg-gray-200">
     <Icon name="consultant" aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />{text}</p>;
@@ -19,6 +20,29 @@ export function MessageContent({ text, sender, customer = false, ticket }: Custo
       className={`max-w-[85%] whitespace-pre-wrap text-base text-zinc-900 ${customer ? "rounded-2xl bg-gray-100 px-3 py-2" : human ? "rounded-2xl bg-emerald-100 px-3 py-2" : "py-2"}`}>
       {customer ? text : <CitationText text={text} />}
     </div>
+    {entryId && onConcern && (sender.kind === "ai" || human) && <MessageConcern entryId={entryId} onConcern={onConcern} />}
+  </div>;
+}
+
+function MessageConcern({ entryId, onConcern }: { entryId: string; onConcern: NonNullable<Parameters<typeof MessageContent>[0]["onConcern"]> }) {
+  const [kind, setKind] = useState<"report" | "question">();
+  const [reason, setReason] = useState("");
+  const [status, setStatus] = useState("");
+  const submit = async () => {
+    if (!kind || reason.trim().length < 3) return;
+    const result = await onConcern(entryId, kind, reason.trim());
+    setStatus(result);
+    if (result.includes("created") || result.includes("sent to a person")) { setKind(undefined); setReason(""); }
+  };
+  return <div className="flex max-w-full flex-wrap items-center gap-2 text-xs text-blue-700">
+    <button className="inline-flex min-h-8 items-center gap-1 underline" onClick={() => { setKind("report"); setStatus(""); }}><Icon name="flag" aria-hidden="true" className="h-3.5 w-3.5" />Report</button>
+    {kind !== "report" && <button className="min-h-8 underline" onClick={() => { setKind("question"); setStatus(""); }}>Ask a person</button>}
+    {kind && <div className="flex w-full flex-wrap gap-2">
+      <input aria-label={kind === "report" ? "Why are you reporting this message?" : "What should a person verify?"} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={300} placeholder={kind === "report" ? "Why is this message wrong?" : "What should a person check?"} className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 px-3 text-sm text-zinc-900" />
+      <button className="h-10 rounded-md border border-gray-300 px-3 text-sm text-zinc-900 disabled:opacity-50" disabled={reason.trim().length < 3} onClick={() => void submit()}>{kind === "report" ? "Submit report" : "Ask"}</button>
+    </div>}
+    {/* Outside the form: a successful submit closes the form, and the confirmation must stay visible. */}
+    {status && <span role="status" className="w-full text-zinc-700">{status}</span>}
   </div>;
 }
 

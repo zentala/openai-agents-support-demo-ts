@@ -7,11 +7,11 @@ export async function adminResponse<T>(response: Response): Promise<T> {
   return body;
 }
 
-/** Tone warnings are a recoverable composer state; other HTTP errors keep their normal notice. */
+/** Structured refusals return to the composer so the draft and exact server reason stay visible. */
 export async function adminActionResponse(response: Response): Promise<ActionResponse> {
   if (response.status === 409) {
     const body = await response.clone().json().catch(() => null);
-    if (body?.ok === false && body.errorType === "StaffToneWarning" && typeof body.warningId === "string" && typeof body.message === "string") return body;
+    if (body?.ok === false && typeof body.errorType === "string" && typeof body.message === "string") return body;
   }
   return adminResponse<ActionResponse>(response);
 }

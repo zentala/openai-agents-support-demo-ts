@@ -3,7 +3,7 @@
 /** Customer-scoped business snapshot for the Agent View. */
 import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "@/components/icon";
-import type { AgentEvent } from "@/lib/types";
+import { GUEST_ID, type AgentEvent } from "@/lib/types";
 
 type Snapshot = {
   status: "unverified" | "verified";
@@ -13,11 +13,20 @@ type Snapshot = {
   orders?: { id: string; status: string; deliveredDate: string | null; items: { name: string; qty: number }[]; address: Record<string, string> }[];
   refunds?: { id: string; orderId: string; status: string; amount: number }[];
   claims?: { id: string; orderId: string; item: string; damage: string }[];
-  tickets?: { id: string; summary: string; status: string; category?: string }[];
+  tickets?: { id: string; status: string; category?: string; createdAt: string }[];
   agentContext?: { activeOrderId: string | null; handoffReason: string | null; ticketState: string };
 };
 
 const addressText = (address?: Record<string, string>) => address ? Object.values(address).filter(Boolean).join(", ") || "No saved address" : "No saved address";
+
+const ticketCategoryLabel = (category?: string): string => ({
+  delivery_dispute: "Delivery issue",
+  consultant_complaint: "Consultant complaint",
+  manager_review: "Manager review",
+  manager_requested: "Manager requested",
+  message_report: "Message report",
+  answer_question: "Answer question",
+} as Record<string, string>)[category ?? ""] ?? "Support";
 
 function Section({ title, icon, children }: { title: string; icon: "customer" | "address" | "order" | "refund" | "claim" | "ticket" | "context"; children: ReactNode }) {
   return <section className="space-y-2">
@@ -47,7 +56,11 @@ function ContextTiles({ snapshot }: { snapshot: Snapshot }) {
   </div>;
 }
 
-export function CustomerTab({ threadId, events }: { threadId: string | null; events: AgentEvent[] }) {
+function GuestNotVerified() {
+  return <div className="p-5"><Section title="Guest" icon="customer"><Empty>Not verified yet. Verify an order before customer records appear.</Empty></Section></div>;
+}
+
+export function CustomerTab({ threadId, selectedCustomerId, events }: { threadId: string | null; selectedCustomerId: string; events: AgentEvent[] }) {
   const [loaded, setLoaded] = useState<{ threadId: string; snapshot: Snapshot | null } | null>(null);
   useEffect(() => {
     let current = true;
@@ -59,10 +72,12 @@ export function CustomerTab({ threadId, events }: { threadId: string | null; eve
     return () => { current = false; };
   }, [threadId, events]);
 
-  if (!threadId) return <div className="p-5 text-sm text-zinc-600">Start a conversation to see customer information.</div>;
+  if (!threadId) return selectedCustomerId === GUEST_ID
+    ? <GuestNotVerified />
+    : <div className="p-5 text-sm text-zinc-600">Loading customer information…</div>;
   const snapshot = loaded?.threadId === threadId ? loaded.snapshot : null;
   if (!snapshot) return <div className="p-5 text-sm text-zinc-600">Loading customer information…</div>;
-  if (snapshot.status === "unverified") return <div className="p-5"><Section title="Guest" icon="customer"><Empty>Not verified yet. Verify an order before customer records appear.</Empty></Section></div>;
+  if (snapshot.status === "unverified") return <GuestNotVerified />;
 
   const orders = snapshot.orders ?? [];
   const refunds = snapshot.refunds ?? [];
@@ -82,7 +97,7 @@ export function CustomerTab({ threadId, events }: { threadId: string | null; eve
     </Section>
     <Section title="Refunds" icon="refund">{refunds.length ? <p className="text-sm text-zinc-700">{refunds.map((row) => `${row.id} · #${row.orderId} · ${row.status} · ${row.amount.toFixed(2)}`).join("; ")}</p> : <Empty>No refunds</Empty>}</Section>
     <Section title="Claims" icon="claim">{claims.length ? <p className="text-sm text-zinc-700">{claims.map((row) => `${row.id} · #${row.orderId} · ${row.item}: ${row.damage}`).join("; ")}</p> : <Empty>No claims</Empty>}</Section>
-    <Section title="Open tickets" icon="ticket">{openTickets.length ? <p className="text-sm text-zinc-700">{openTickets.map((row) => `${row.id} · ${row.category ?? "support"} · ${row.summary}`).join("; ")}</p> : <Empty>No open tickets</Empty>}</Section>
+    <Section title="Open tickets" icon="ticket">{openTickets.length ? <p className="text-sm text-zinc-700">{openTickets.map((row) => `${row.id} · ${ticketCategoryLabel(row.category)} · ${row.status}`).join("; ")}</p> : <Empty>No open tickets</Empty>}</Section>
     <Section title="What the agent knows" icon="context"><ContextTiles snapshot={snapshot} /></Section>
   </div>;
 }

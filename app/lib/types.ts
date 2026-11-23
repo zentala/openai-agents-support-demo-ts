@@ -172,7 +172,7 @@ export type AgentEventBody =
   | { kind: "sensitive_stored"; field: "iban" | "phone"; status: string }
   | { kind: "error"; errorType: string; message: string; where: string }
   | { kind: "trace"; traceId: string; url: string }
-  | { kind: "unbacked_claim_blocked"; claimType: "escalation" | "refund" | "claim" | "address" | "report" };
+  | { kind: "unbacked_claim_blocked"; claimType: "escalation" | "refund" | "claim" | "address" | "report" | "question" };
 
 export type AgentEvent = AgentEventBody & { id: string; ts: number; turnId?: string };
 

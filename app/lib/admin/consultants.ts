@@ -4,7 +4,9 @@
  * SECURITY (demo limit): the console trusts the name the browser sends. In production the consultant
  * is the identity from the login session (SSO), never a value the client picks.
  */
-export const CONSULTANTS = ["Marta Nowak", "Tomasz Berg", "Eva Lindqvist"] as const;
+export const CONSULTANTS = ["Marta Nowak", "Tomasz Berg", "Eva Lindqvist", "Ewa Zielińska"] as const;
+export const MANAGER = "Ewa Zielińska";
+export const isManager = (name: string): boolean => name === MANAGER;
 
 export type ConsultantName = (typeof CONSULTANTS)[number];
 

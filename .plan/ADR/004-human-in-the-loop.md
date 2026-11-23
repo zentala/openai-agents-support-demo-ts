@@ -39,13 +39,9 @@ Option 2.
   another join notice. Other consultants cannot take it over through the combined action.
   The composer is keyed by conversation and consultant, with stale selected views hidden while
   another conversation loads. All reply checks belong before the combined action's mutation boundary.
-- Both staff reply actions check a small Polish/English whole-word tone list on the server before
-  takeover or delivery. A warning creates a private, one-use acknowledgement bound to the thread,
-  consultant, reply action and exact validated text. Only explicit resend with that acknowledgement
-  can send the flagged text. Editing or changing the selected conversation/consultant clears the UI
-  acknowledgement; takeover/hand-back and successful delivery clear the server record. The existing
-  audit store records warning and acknowledged delivery without copying message text. This warns
-  rather than blocks, and is a simple vocabulary check, not model-based moderation.
+- **Superseded:** H11's tone-warning and one-use acknowledgement behavior is replaced by server-side
+  blocking with local insult stems and classifier moderation in [ADR 014](014-block-staff-replies.md).
+  The remaining hand-back, takeover and approval decisions in this ADR still apply.
 - The run is serialized and stored in `pending-runs.ts`. Resume uses
   `RunState.fromStringWithContext(agent, json, new RunContext(ctx))`, so the resumed run uses
   our context object and no private SDK field is read.

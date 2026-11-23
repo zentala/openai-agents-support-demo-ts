@@ -6,6 +6,7 @@ import type { TakeoverState } from "@/lib/runtime/takeover-state";
 import type { TranscriptEntry } from "@/lib/runtime/threads";
 import type { ApprovalRequest, CustomerOrderView, StaffInstruction } from "@/lib/types";
 import type { Metrics } from "./metrics";
+import type { MessageReportRecord } from "@/lib/data/store";
 
 export type TicketView = TicketRecord & {
   customerName: string;
@@ -26,6 +27,7 @@ export type AdminState = {
   audit: AuditRecord[];
   metrics: Metrics;
   ratingsCount: number;
+  reports: MessageReportRecord[];
 };
 
 export type RatingView = { rating: "up" | "down"; correction?: string; ratedBy: string };
@@ -43,15 +45,18 @@ export type ThreadView = {
   transcript: TranscriptEntry[];
   /** Keyed by transcript entry id. */
   ratings: Record<string, RatingView>;
+  staffLockouts: string[];
 };
 
 /** Body of POST /api/admin/actions. The route validates it with zod. */
 export type AdminAction =
   | { type: "take_over"; consultant: string; threadId: string }
   | { type: "hand_back"; consultant: string; threadId: string; note?: string }
-  | { type: "reply"; consultant: string; threadId: string; text: string; toneAcknowledgement?: string }
-  | { type: "take_over_and_reply"; consultant: string; threadId: string; text: string; toneAcknowledgement?: string }
+  | { type: "reply"; consultant: string; threadId: string; text: string }
+  | { type: "take_over_and_reply"; consultant: string; threadId: string; text: string }
   | { type: "decide_approval"; consultant: string; approvalId: string; approve: boolean }
+  | { type: "unlock_staff"; consultant: string; threadId: string; staff: string }
+  | { type: "escalate_manager"; consultant: string; threadId: string; reason: string }
   | { type: "rate"; consultant: string; threadId: string; entryId: string; rating: "up" | "down"; correction?: string };
 
 export type ActionResponse = { ok: true } | { ok: false; errorType: string; message: string; warningId?: string };

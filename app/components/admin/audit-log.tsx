@@ -19,7 +19,7 @@ export function AuditLog({ audit, nested = false }: { audit: AuditRecord[]; nest
           <div key={a.id} data-testid="audit-row" data-decision={a.decision} className="rounded-md border border-gray-200 bg-white p-2 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <Badge icon={a.decision === "approved" ? "passed" : a.decision === "rejected" ? "failed" : "guardrail"} tone={a.decision === "approved" ? "green" : a.decision === "rejected" ? "red" : "amber"}>
-                {a.decision === "tone_warning" ? "Tone warning" : a.decision === "sent_after_warning" ? "Sent after warning" : a.decision}
+                {a.decision === "reply_blocked" ? "Reply blocked" : a.decision}
               </Badge>
               <span className="font-medium">{a.decidedBy}</span>
               <span className="ml-auto text-xs text-zinc-600">{formatTime(a.decidedAt, true)}</span>

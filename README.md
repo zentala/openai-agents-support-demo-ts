@@ -28,7 +28,7 @@ Choose a UI example to start a fresh conversation, or pass stable IDs to `just e
 
 <!-- scenarios:generated:start -->
 
-All 54 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
+All 59 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
 
 Steps count customer messages. Widget clicks and consultant decisions are additional actions. UI + eval examples appear in the start screen and Scenarios menu; eval-only examples require fixture setup.
 
@@ -68,7 +68,7 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 </details>
 
 <details>
-<summary>Human handoff (9)</summary>
+<summary>Human handoff (14)</summary>
 
 | Scenario | Stable ID | Steps | Availability |
 | --- | --- | --- | --- |
@@ -81,6 +81,11 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 | Ask what happens after escalation | `escalation-next-step` | 1 | UI + eval |
 | Follow a consultant's private note | `staff-handback-context` | 1 | Eval only (fixture setup) |
 | Complain after a consultant hands back | `consultant-complaint-after-handback` | 1 | Eval only (fixture setup) |
+| Ask for a manager in English | `h16-manager-request-en` | 1 | UI + eval |
+| Ask for a manager in Polish | `h16-manager-request-pl` | 1 | UI + eval |
+| Ask for a manager in German | `h16-manager-request-de` | 1 | UI + eval |
+| Report an incorrect AI answer | `h16-report-ai-answer` | 2 | UI + eval |
+| Ask a person whether an answer is true | `h16-ask-person-answer` | 2 | UI + eval |
 
 </details>
 

@@ -3,6 +3,8 @@
  * Invalid drafts and another consultant's ownership must fail before any takeover or message.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const { classify } = vi.hoisted(() => ({ classify: vi.fn() }));
+vi.mock("openai", () => ({ default: class { responses = { create: classify }; } }));
 import { POST } from "@/app/api/admin/actions/route";
 import { MAX_INPUT_LENGTH } from "@/lib/config";
 import { clearEventLog, subscribeToThread } from "@/lib/runtime/event-bus";
@@ -20,6 +22,7 @@ const send = (text: string, consultant = "Marta Nowak", threadId = thread.thread
 
 beforeEach(() => {
   vi.stubEnv("PUBLIC_DEMO", "false");
+  classify.mockResolvedValue({ output_text: '{"rude":false,"reason":"polite"}' });
   clearEventLog();
   thread = createThread("c-anna");
   events = [];

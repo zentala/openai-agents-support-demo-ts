@@ -75,7 +75,7 @@ export type TicketRecord = {
   /** Who created it: the agent's escalate_to_human tool or the escalation rules in code. */
   source: "agent" | "rule";
   reason: string;
-  category?: "delivery_dispute" | "consultant_complaint";
+  category?: "delivery_dispute" | "consultant_complaint" | "manager_review" | "manager_requested" | "message_report" | "answer_question";
   status: "open" | "resolved";
 };
 /** Who decided a paused action, when, and which trace it belongs to. */
@@ -88,7 +88,7 @@ export type AuditRecord = {
   customerId: string;
   toolName: string;
   summary: string;
-  decision: "approved" | "rejected" | "tone_warning" | "sent_after_warning";
+  decision: "approved" | "rejected" | "tone_warning" | "sent_after_warning" | "reply_blocked";
   decidedBy: string;
   decidedAt: string;
 };
@@ -108,6 +108,7 @@ export type RatingRecord = {
   agentReply: string;
   tools: string[];
 };
+export type MessageReportRecord = { id: string; threadId: string; entryId: string; quote: string; author: string; reason: string; kind: "report" | "question"; createdAt: string; answeredAt?: string };
 
 const profiles = profilesJson as Record<string, { email: string; postalCode: string; defaultAddress?: Address }>;
 export const customers: Customer[] = customersJson.map((customer) => ({ ...customer, ...profiles[customer.id] }));
@@ -118,13 +119,15 @@ type Memory = {
   tickets: TicketRecord[];
   audit: AuditRecord[];
   ratings: RatingRecord[];
+  reports: MessageReportRecord[];
   claims: ClaimRecord[];
   photos: PhotoRecord[];
   /** orderId -> address the customer changed it to (the JSON order stays untouched). */
   addressChanges: Record<string, Address>;
 };
 const globals = globalThis as unknown as { __nordicMemory?: Memory };
-const memory: Memory = (globals.__nordicMemory ??= { refunds: [], tickets: [], audit: [], ratings: [], claims: [], photos: [], addressChanges: {} });
+const memory: Memory = (globals.__nordicMemory ??= { refunds: [], tickets: [], audit: [], ratings: [], reports: [], claims: [], photos: [], addressChanges: {} });
+memory.reports ??= [];
 
 export const orderTotal = (order: Order): number =>
   order.items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
@@ -171,7 +174,7 @@ export const findOpenTicketForThread = (threadId: string): TicketRecord | undefi
 
 /** A consultant handing the conversation back closes its tickets. */
 export function resolveTicketsForThread(threadId: string): void {
-  memory.tickets.filter((t) => t.threadId === threadId).forEach((t) => (t.status = "resolved"));
+  memory.tickets.filter((t) => t.threadId === threadId && !["manager_review", "consultant_complaint", "message_report", "answer_question"].includes(t.category ?? "")).forEach((t) => (t.status = "resolved"));
 }
 
 export function addAudit(input: Omit<AuditRecord, "id">): AuditRecord {
@@ -222,11 +225,18 @@ export function resetDemoData(): void {
   memory.tickets.length = 0;
   memory.audit.length = 0;
   memory.ratings.length = 0;
+  memory.reports.length = 0;
 }
 
 export const listRefunds = (): RefundRecord[] => [...memory.refunds];
 export const listTickets = (): TicketRecord[] => [...memory.tickets];
 export const listAudit = (): AuditRecord[] => [...memory.audit];
 export const listRatings = (): RatingRecord[] => [...memory.ratings];
+export const addMessageReport = (input: Omit<MessageReportRecord, "id" | "createdAt">): MessageReportRecord => {
+  const record = { ...input, id: `MR-${memory.reports.length + 1}`, createdAt: new Date().toISOString() };
+  memory.reports.push(record);
+  return record;
+};
+export const listMessageReports = (): MessageReportRecord[] => [...memory.reports];
 export const listClaims = (): ClaimRecord[] => [...memory.claims];
 export const listPhotos = (): PhotoRecord[] => [...memory.photos];

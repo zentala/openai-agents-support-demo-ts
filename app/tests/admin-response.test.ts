@@ -4,8 +4,8 @@ import { adminActionResponse, adminResponse } from "@/lib/client/admin-response"
 it("recognizes a plain-text password challenge", async () => {
   await expect(adminResponse(new Response("Authentication required", { status: 401 }))).rejects.toThrow("AdminPasswordRequired");
 });
-it("keeps the actionable tone acknowledgement on 409 while preserving other refusals", async () => {
-  const body = { ok: false, errorType: "StaffToneWarning", warningId: "server-warning", message: "This may sound rude to the customer. Send anyway?" };
+it("keeps structured reply refusals on 409 so the composer can show the reason", async () => {
+  const body = { ok: false, errorType: "StaffReplyBlocked", message: "This reply sounds insulting: 'lamusie'. Rephrase it." };
   await expect(adminActionResponse(Response.json(body, { status: 409 }))).resolves.toEqual(body);
   await expect(adminActionResponse(Response.json({ errorType: "NotYourConversation", message: "Owned by someone else" }, { status: 409 })))
     .rejects.toThrow("NotYourConversation: Owned by someone else");

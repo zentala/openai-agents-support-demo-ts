@@ -29,7 +29,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 /** Server data: the state, the open conversation (kept in the URL hash), refreshed on a timer. */
-function useConsoleData() {
+function useConsoleData(consultant: string) {
   const [state, setState] = useState<AdminState | null>(null);
   const [threadId, setThreadId] = useState<string | undefined>();
   const [thread, setThread] = useState<ThreadView | null>(null);
@@ -39,14 +39,14 @@ function useConsoleData() {
   const refresh = useCallback(async () => {
     const open = threadRef.current;
     try {
-      setState(await getJson<AdminState>("/api/admin/state"));
-      const view = open ? await getJson<ThreadView>(`/api/admin/threads/${encodeURIComponent(open)}`) : null;
+      setState(await getJson<AdminState>(`/api/admin/state?consultant=${encodeURIComponent(consultant)}`));
+      const view = open ? await getJson<ThreadView>(`/api/admin/threads/${encodeURIComponent(open)}?consultant=${encodeURIComponent(consultant)}`) : null;
       if (threadRef.current === open) setThread(view);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, []);
+  }, [consultant]);
 
   const select = useCallback(
     (id: string | undefined) => {
@@ -85,7 +85,7 @@ export function useAdminConsole() {
   const { headers } = useVisitorKey();
   const [consultant, setConsultant] = useState<string>(CONSULTANTS[0]);
   const [acting, setActing] = useState(false);
-  const { setError, refresh, ...data } = useConsoleData();
+  const { setError, refresh, ...data } = useConsoleData(consultant);
 
   /** Sends one action; a refusal from the server is shown as `type: message`, never swallowed. */
   const perform = useCallback(
@@ -99,7 +99,7 @@ export function useAdminConsole() {
         });
         const result = await adminActionResponse(response);
         await refresh();
-        setError(result.ok || result.errorType === "StaffToneWarning" ? null : `${result.errorType}: ${result.message}`);
+        setError(result.ok ? null : `${result.errorType}: ${result.message}`);
         return result;
       } catch (e) {
         setError(`ActionFailed: ${e instanceof Error ? e.message : String(e)}`);

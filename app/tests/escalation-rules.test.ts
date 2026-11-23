@@ -23,6 +23,12 @@ describe("decideEscalation: explicit request for a human (PL / EN / DE)", () => 
   });
 });
 
+describe("decideEscalation: manager requests", () => {
+  it.each(["I want your manager", "I want to speak to a manager", "I want a manager", "Can I talk to the manager?", "Please get me a supervisor", "Please let me speak to your supervisor", "Chcę rozmawiać z przełożonym", "Chcę rozmawiać z kierownikiem", "poproszę kierownika", "dawaj szefa", "Ich möchte mit meinem Vorgesetzten sprechen", "Kann ich mit dem Chef sprechen?", "Ich will mit dem Chef sprechen.", "Vorgesetzten, bitte."]) ("routes to the manager queue: %s", (text) => {
+    expect(decide(text)).toMatchObject({ escalate: true, reason: "manager_requested" });
+  });
+});
+
 describe("decideEscalation: legal and GDPR terms (PL / EN / DE)", () => {
   it.each([
     "I will sue you",
@@ -70,6 +76,8 @@ describe("decideEscalation: ordinary messages do not escalate", () => {
     "That is a human mistake, no problem",
     "Is the human resources team involved in my delivery?",
     "Many people bought this sofa, is it popular?",
+    "Der Chef von Ikea hat das gesagt.",
+    "Ich arbeite für den Vorgesetzten.",
     "Viele Menschen kaufen dieses Sofa",
     "To był błąd ludzki, ale dziękuję",
     "I pursued this earlier",

@@ -289,6 +289,10 @@
     "liveDemo": {
       "glyph": "MonitorPlay",
       "symbol": "icon-liveDemo"
+    },
+    "flag": {
+      "glyph": "Flag",
+      "symbol": "icon-flag"
     }
   }
 }

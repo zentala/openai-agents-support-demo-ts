@@ -21,11 +21,12 @@ import { customerMessages, outcomeSender } from "./customer-messages";
 import { classifyActionClaims, claimBackedByResults, type ActionClaim, type ActionClaimType } from "@/lib/guardrails/action-claims";
 import { pick } from "@/lib/escalation/notices";
 import { emitAgentEvent } from "./event-bus";
+import { hasMessageConcernForThread } from "./message-concerns";
 
 const unbackedClaimReply = (language: string | undefined, claimType: ActionClaimType): string => pick(language, {
-  pl: claimType === "refund" ? "Przepraszam, nie mogę potwierdzić, że zwrot został zatwierdzony." : claimType === "claim" ? "Przepraszam, nie mogę potwierdzić, że reklamacja została złożona." : claimType === "address" ? "Przepraszam, adres nie został jeszcze zmieniony." : claimType === "report" ? "Przepraszam, nie mogę potwierdzić, że sprawa została zgłoszona." : "Nie przekazałem jeszcze tej sprawy. Czy chcesz połączyć się z konsultantem?",
-  en: claimType === "refund" ? "Sorry, I can't confirm that a refund was approved." : claimType === "claim" ? "Sorry, I can't confirm that a claim was submitted." : claimType === "address" ? "Sorry, the address has not been changed yet." : claimType === "report" ? "Sorry, I can't confirm that this issue was reported." : "I have not forwarded this yet. Do you want me to connect you with a consultant?",
-  de: claimType === "refund" ? "Es tut mir leid, ich kann nicht bestätigen, dass eine Erstattung genehmigt wurde." : claimType === "claim" ? "Es tut mir leid, ich kann nicht bestätigen, dass eine Reklamation eingereicht wurde." : claimType === "address" ? "Es tut mir leid, die Adresse wurde noch nicht geändert." : claimType === "report" ? "Es tut mir leid, ich kann nicht bestätigen, dass Ihr Anliegen gemeldet wurde." : "Ich habe Ihr Anliegen noch nicht weitergeleitet. Möchten Sie mit einem Mitarbeiter sprechen?",
+  pl: claimType === "refund" ? "Przepraszam, nie mogę potwierdzić, że zwrot został zatwierdzony." : claimType === "claim" ? "Przepraszam, nie mogę potwierdzić, że reklamacja została złożona." : claimType === "address" ? "Przepraszam, adres nie został jeszcze zmieniony." : claimType === "report" ? "Przepraszam, nie mogę potwierdzić, że sprawa została zgłoszona." : claimType === "question" ? "Przepraszam, nie mogę potwierdzić, że pytanie zostało wysłane do konsultanta." : "Nie przekazałem jeszcze tej sprawy. Czy chcesz połączyć się z konsultantem?",
+  en: claimType === "refund" ? "Sorry, I can't confirm that a refund was approved." : claimType === "claim" ? "Sorry, I can't confirm that a claim was submitted." : claimType === "address" ? "Sorry, the address has not been changed yet." : claimType === "report" ? "Sorry, I can't confirm that this issue was reported." : claimType === "question" ? "Sorry, I can't confirm that your question was sent to a consultant." : "I have not forwarded this yet. Do you want me to connect you with a consultant?",
+  de: claimType === "refund" ? "Es tut mir leid, ich kann nicht bestätigen, dass eine Erstattung genehmigt wurde." : claimType === "claim" ? "Es tut mir leid, ich kann nicht bestätigen, dass eine Reklamation eingereicht wurde." : claimType === "address" ? "Es tut mir leid, die Adresse wurde noch nicht geändert." : claimType === "report" ? "Es tut mir leid, ich kann nicht bestätigen, dass Ihr Anliegen gemeldet wurde." : claimType === "question" ? "Es tut mir leid, ich kann nicht bestätigen, dass Ihre Frage weitergeleitet wurde." : "Ich habe Ihr Anliegen noch nicht weitergeleitet. Möchten Sie mit einem Mitarbeiter sprechen?",
 });
 
 function blockUnbackedClaim(thread: Thread, ctx: SupportContext, claimType: ActionClaimType): string {
@@ -42,7 +43,7 @@ function knownRecipient(thread: Thread, recipient: string | null): boolean {
 function claimHasBacking(claim: ActionClaim, thread: Thread, results: Record<string, unknown[]>): boolean {
   if (!knownRecipient(thread, claim.recipient_named)) return false;
   if (claim.type === "escalation") return Boolean(findOpenTicketForThread(thread.threadId));
-  if (claim.type === "report") return Boolean(findOpenTicketForThread(thread.threadId)) || claimBackedByResults("report", results);
+  if (claim.type === "report" || claim.type === "question") return hasMessageConcernForThread(thread.threadId, claim.type) || claimBackedByResults(claim.type, results);
   return claimBackedByResults(claim.type, results);
 }
 
@@ -96,7 +97,7 @@ function deliverCustomerMessages(
   for (const message of messages) {
     const entry = { role: message.sender.kind === "ai" ? "agent" as const : "system" as const, ...message, tools: observed.tools };
     if (delivery === "push") pushToCustomer(thread, entry, quickReplies);
-    else addTranscript(thread, entry);
+    else message.id = addTranscript(thread, entry).id;
   }
   return { ...outcome, reply, messages };
 }

@@ -13,6 +13,7 @@ import { MessageList } from "./message-list";
 import { ScenarioBar } from "./scenario-bar";
 import type { WidgetActions } from "./widget-actions";
 import type { DraftSuggestion } from "@/lib/client/scenario-progress";
+import { useState } from "react";
 
 type Customer = { id: string; name: string; language: string };
 
@@ -35,20 +36,25 @@ type Props = {
   activeOrderId?: string;
   actions: WidgetActions;
   onScenario: (scenario: Scenario) => void;
+  onConcern: (entryId: string, kind: "report" | "question", reason: string) => Promise<string>;
+  onBackToAssistant: () => Promise<string>;
 };
 
 export function CustomerView(props: Props) {
   const { publicDemo } = useVisitorKey();
+  const [handBackResult, setHandBackResult] = useState("");
   return (
     <div data-testid="customer-view" className={`order-1 flex h-[60svh] ${publicDemo ? "min-h-[44rem] lg:min-h-0" : "min-h-80"} min-w-0 flex-col rounded-xl bg-white shadow-sm lg:order-2 lg:h-full lg:w-2/5`}>
       <CustomerHeader props={props} />
       <VisitorKeyControl />
       {props.handler.status === "human" && (
-        <p data-testid="human-banner" className="bg-green-50 px-4 py-1.5 text-center text-sm text-green-800">
-          A human colleague joined{props.handler.consultant ? `: ${props.handler.consultant}` : ""}
-        </p>
+        <div data-testid="human-banner" className="flex flex-wrap items-center justify-center gap-2 bg-green-50 px-4 py-1.5 text-center text-sm text-green-800">
+          <span>A human colleague joined{props.handler.consultant ? `: ${props.handler.consultant}` : ""}</span>
+          <button data-testid="back-to-assistant" className="inline-flex h-10 items-center rounded-md border border-green-300 px-3 font-medium hover:bg-green-100" onClick={() => void props.onBackToAssistant().then(setHandBackResult)}>Back to assistant</button>
+        </div>
       )}
-      <MessageList messages={props.messages} busy={props.busy} allowQuickReplies={props.handler.status === "agent"} lastEvent={props.lastEvent} activeOrderId={props.activeOrderId} actions={props.actions} ticket={{ openTicketId: props.openTicketId, handler: props.handler.status }} onScenario={props.onScenario} scenarioLabel={props.scenarioLabel} />
+      {handBackResult && <p data-testid="handback-result" role="status" className="px-4 py-1 text-center text-sm text-green-800">{handBackResult}</p>}
+      <MessageList messages={props.messages} busy={props.busy} allowQuickReplies={props.handler.status === "agent"} lastEvent={props.lastEvent} activeOrderId={props.activeOrderId} actions={props.actions} ticket={{ openTicketId: props.openTicketId, handler: props.handler.status }} onConcern={props.onConcern} onScenario={props.onScenario} scenarioLabel={props.scenarioLabel} />
       <Composer key={props.draftScope} suggestion={props.suggestion} busy={props.busy} onSend={props.onSend} scenarios={<ScenarioBar busy={props.busy} onRun={props.onScenario} />} />
     </div>
   );

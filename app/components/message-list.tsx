@@ -26,6 +26,7 @@ type Props = {
   actions: WidgetActions;
   /** Lets a ticket badge show waiting / taken over / closed. */
   ticket?: TicketContext;
+  onConcern?: (entryId: string, kind: "report" | "question", reason: string) => Promise<string>;
 };
 
 const textOf = (message: SupportUIMessage): string =>
@@ -45,7 +46,7 @@ function workingLine(event?: AgentEvent): string {
   return "Thinking...";
 }
 
-export function MessageList({ messages, busy, lastEvent, activeOrderId, actions, ticket, onScenario, scenarioLabel, allowQuickReplies = true }: Props) {
+export function MessageList({ messages, busy, lastEvent, activeOrderId, actions, ticket, onConcern, onScenario, scenarioLabel, allowQuickReplies = true }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (messages.length) endRef.current?.scrollIntoView({ block: "end" });
@@ -56,21 +57,21 @@ export function MessageList({ messages, busy, lastEvent, activeOrderId, actions,
     <div className="flex-1 space-y-3 overflow-y-auto p-4" data-testid="messages">
       {messages.length === 0 && <ChatStart busy={busy} onScenario={onScenario} />}
       {scenarioLabel && <p data-testid="running-scenario" className="text-center text-xs italic text-zinc-600">Scenario: {displayScenarioLabel(scenarioLabel)}</p>}
-      {messages.map((m, index) => <MessageItem key={m.id} m={m} busy={busy} active={!busy && index === messages.length - 1} allowQuickReplies={allowQuickReplies} activeOrderId={activeOrderId} actions={actions} ticket={ticket} />)}
+      {messages.map((m, index) => <MessageItem key={m.id} m={m} busy={busy} active={!busy && index === messages.length - 1} allowQuickReplies={allowQuickReplies} activeOrderId={activeOrderId} actions={actions} ticket={ticket} onConcern={onConcern} />)}
       {busy && <p className="text-xs italic text-zinc-600" data-testid="working">{workingLine(lastEvent)}</p>}
       <div ref={endRef} />
     </div>
   );
 }
 
-function MessageItem({ m, busy, active, activeOrderId, actions, allowQuickReplies, ticket }: Pick<Props, "busy" | "activeOrderId" | "actions" | "allowQuickReplies" | "ticket"> & { m: SupportUIMessage; active: boolean }) {
+function MessageItem({ m, busy, active, activeOrderId, actions, allowQuickReplies, ticket, onConcern }: Pick<Props, "busy" | "activeOrderId" | "actions" | "allowQuickReplies" | "ticket" | "onConcern"> & { m: SupportUIMessage; active: boolean }) {
         const sender = senderOf(m);
         const latestOffer = widgetsOf(m).filter((widget) => widget.type === "quick-replies").at(-1);
         const entries = m.parts.flatMap((part) => part.type === "data-messages" ? part.data : []);
         return (
         <div key={m.id} className="flex w-full flex-col items-start gap-3">
           {(entries.length ? entries : [{ text: textOf(m), sender: sender ?? { kind: m.role === "user" ? "human" as const : "ai" as const } }])
-            .map((entry, i) => <MessageContent key={i} {...entry} customer={m.role === "user"} ticket={ticket} />)}
+            .map((entry, i) => <MessageContent key={i} {...entry} customer={m.role === "user"} ticket={ticket} entryId={entry.id ?? m.id} onConcern={onConcern} />)}
           {widgetsOf(m).map((widget, i) => (
             <ChatWidget
               key={i}

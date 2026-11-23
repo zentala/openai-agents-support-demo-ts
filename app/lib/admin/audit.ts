@@ -9,10 +9,10 @@ import type { ApprovalRequest } from "@/lib/types";
 import type { Thread } from "@/lib/runtime/threads";
 
 /** Staff tone records reuse the guarded audit stream without storing a second copy of the message. */
-export function recordToneAudit(thread: Thread, consultant: string, warningId: string, decision: "tone_warning" | "sent_after_warning"): AuditRecord {
+export function recordToneAudit(thread: Thread, consultant: string, warningId: string, decision: "reply_blocked", reason: string): AuditRecord {
   return addAudit({ threadId: thread.threadId, traceId: thread.traceId, customerId: thread.customerId,
     warningId, toolName: "consultant_reply", decision, decidedBy: consultant, decidedAt: new Date().toISOString(),
-    summary: decision === "tone_warning" ? "Reply tone warning shown; no message sent." : "Reply sent after explicit tone acknowledgement." });
+    summary: `Reply blocked before delivery: ${reason}.` });
 }
 
 /** Pure: the record for one decision. `now` is a parameter so tests do not depend on the clock. */

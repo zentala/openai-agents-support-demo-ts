@@ -23,7 +23,7 @@ type Props = {
   consultant: string;
   acting: boolean;
   onHandBack: (note: string) => Promise<boolean>;
-  onReply: (text: string, toneAcknowledgement?: string) => Promise<ActionResponse>;
+  onReply: (text: string) => Promise<ActionResponse>;
   onRate: (entryId: string, rating: "up" | "down", correction: string) => void;
 };
 
@@ -62,7 +62,7 @@ export function ConversationPane({ thread, ticketId, ticketNumber, consultant, a
           </div>
         ))}
       </div>
-      <ReplyBox key={`${thread.threadId}:${consultant}`} mine={mine} handler={handler} acting={acting} onReply={onReply} onHandBack={onHandBack} />
+      <ReplyBox key={`${thread.threadId}:${consultant}`} mine={mine} handler={handler} acting={acting} locked={thread.staffLockouts.includes(consultant)} onReply={onReply} onHandBack={onHandBack} />
     </div>
   );
 }

@@ -41,12 +41,12 @@ describe("finishTurn action claim guard", () => {
     expect(final.reply).toContain("consultant queue");
   });
 
-  it("backs a report with its successfully filed claim result", async () => {
+  it("does not back a report with a claim result", async () => {
     model.run.mockResolvedValue(result([claim("report")]));
     const final = await finishTurn(current, context(), outcome("Your damage report has been filed."), {
       ...observed, toolResults: { submit_claim: [{ status: "CLAIM_CREATED" }] },
     }, "request");
-    expect(final.reply).toContain("report has been filed");
+    expect(final.reply).toContain("can't confirm that this issue was reported");
   });
 
   it("backs a paid-refund statement with the tool's paid status", async () => {

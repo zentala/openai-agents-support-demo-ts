@@ -7,5 +7,6 @@ import { buildAdminState } from "@/lib/admin/state";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  return Response.json(buildAdminState(req), { headers: { "Cache-Control": "no-store" } });
+  const selectedStaff = new URL(req.url).searchParams.get("consultant") ?? undefined;
+  return Response.json(buildAdminState(req, selectedStaff), { headers: { "Cache-Control": "no-store" } });
 }
