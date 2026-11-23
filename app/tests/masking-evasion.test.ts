@@ -45,6 +45,11 @@ describe("the panel's 'before' text never shows digits hidden behind invisible c
   const PROBE = "P​L61 1090 1014 0000 0712 1981 2874";
   const ctx: SupportContext = { customerId: "c-anna", customerName: "Anna Kowalska", language: "en", threadId: "thread-invisible-probe" };
 
+  // Random ids and millisecond timestamps can contain a 4-digit IBAN group by chance (CI saw "2874" inside
+  // ts 1795428740207), so only the content is serialized for the digit check.
+  const RANDOM_KEYS = new Set(["ts", "id", "turnId", "traceId", "url"]);
+  const content = (value: unknown) => JSON.stringify(value, (key, field) => (RANDOM_KEYS.has(key) ? undefined : field));
+
   it("stripInvisible removes zero-width, bidi and BOM characters", () => {
     expect(stripInvisible("a​b‮c﻿d")).toBe("abcd");
   });
@@ -53,9 +58,9 @@ describe("the panel's 'before' text never shows digits hidden behind invisible c
     const events: AgentEvent[] = [];
     subscribeToThread(ctx.threadId, (e) => events.push(e));
     await handleUserMessage(ctx, `Please refund to ${PROBE}`);
-    expect(JSON.stringify(model.run.mock.calls[0][0])).not.toMatch(DIGITS);
-    expect(JSON.stringify(events)).not.toMatch(DIGITS);
-    expect(JSON.stringify(readEventLog())).not.toMatch(DIGITS);
+    expect(content(model.run.mock.calls[0][0])).not.toMatch(DIGITS);
+    expect(content(events)).not.toMatch(DIGITS);
+    expect(content(readEventLog())).not.toMatch(DIGITS);
     const cleanup = events.find((e) => e.kind === "normalization");
     expect(cleanup).toMatchObject({ stripped: expect.arrayContaining([expect.stringContaining("invisible")]) });
   });
