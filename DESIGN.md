@@ -373,6 +373,18 @@ These coordinator decisions supersede the original gallery's 1.025× mobile zoom
 | F1 | The Pages job explicitly grants contents: read alongside pages: write and id-token: write. |
 | F2 | Space toggles playback only with focus on the player container or page body. Other buttons retain their native Space action. |
 
+### Gallery on phones — player in the first screen (2026-11-25)
+
+| Changed | Replaces | Why |
+|---|---|---|
+| Below 820px the scenario lead and the Shows chip list move below the player (`.view` becomes a flex column; `.lead` and `.meta` get a later `order`). Nothing is hidden or shortened. Desktop is unchanged. | Lead and Shows chip above the player, which started the player about 650px down on 390x844. | A phone user sees the player without scrolling (top about 505px); the text stays one scroll away. Hiding the lead was rejected because it carries the scenario summary and the load-error message. |
+
+### Rating row on phones — correction field on its own line (2026-11-25)
+
+| Changed | Replaces | Why |
+|---|---|---|
+| Below 640px the rating row wraps: thumbs and the "rated ... by ..." label stay on the first line, the correction field takes the full width of a second line. From 640px it is one line, as before. | One non-wrapping row where the field shrank to 58px at 390px and its placeholder was cut to "Correc". | A field has to stay usable before a label shares its line. Checked by `scripts/smoke-d7-rating.mjs` (field at least 200px). |
+
 ### Earlier decisions
 
 | Date | Decision | Replaces | Reason |

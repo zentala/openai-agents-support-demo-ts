@@ -37,7 +37,8 @@ describe("knowledge base files", () => {
   });
 
   it("parses frontmatter and rejects an article without it", () => {
-    expect(parseArticle("---\nid: a\ntitle: A title\n---\nBody text")).toEqual({ id: "a", title: "A title", body: "Body text" });
+    expect(parseArticle("---\nid: a\ntitle: A title\n---\nBody text")).toEqual({ id: "a", title: "A title", body: "Body text", aliases: "" });
+    expect(parseArticle("---\nid: a\ntitle: A\naliases: zwrot, Rückgabe\n---\nBody").aliases).toBe("zwrot, Rückgabe");
     expect(() => parseArticle("no frontmatter")).toThrow();
   });
 
@@ -52,5 +53,34 @@ describe("knowledge base files", () => {
     expect(ids.size).toBeLessThanOrEqual(8);
     expect(ids.has("returns-policy")).toBe(true);
     expect(chunks.some((c) => /iceland/i.test(c.text))).toBe(false);
+  });
+});
+
+describe("keyword ranking of goods returns versus money refunds (no network; the vector part is not exercised)", () => {
+  const topArticle = (query: string): string =>
+    loadKbChunks().map((chunk) => ({ id: chunk.id, score: keywordScore(query, chunk.searchText) })).sort((a, b) => b.score - a.score)[0].id;
+
+  it.each([
+    "Jak zwrócić krzesło?",
+    "zwrot towaru",
+    "chcę oddać stół",
+    "How do I return a chair?",
+    "Wie kann ich die Ware zurückgeben?",
+  ])("a goods-return question ranks returns-policy first: %s", (query) => {
+    expect(topArticle(query)).toBe("returns-policy");
+  });
+
+  it.each([
+    "zwrot pieniędzy",
+    "kiedy dostanę pieniądze",
+    "When do I get my money back?",
+    "Wann bekomme ich mein Geld zurück?",
+  ])("a money-refund question ranks refund-policy first: %s", (query) => {
+    expect(topArticle(query)).toBe("refund-policy");
+  });
+
+  it("aliases never reach the customer-visible article body", () => {
+    for (const article of loadKbArticles()) expect(article).not.toHaveProperty("aliases");
+    expect(loadKbArticles().find((a) => a.id === "returns-policy")!.body).not.toContain("zwrot");
   });
 });

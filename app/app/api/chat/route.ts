@@ -20,6 +20,7 @@ import { subscribeToThread } from "@/lib/runtime/event-bus";
 import { toCustomerEvent } from "@/lib/runtime/event-visibility";
 import { sessionContextOf } from "@/lib/runtime/session-context";
 import { handleUserMessage } from "@/lib/runtime/turn";
+import { dropAddressFlowOnStop } from "@/lib/address/address-flow";
 import { authorizeThread } from "@/lib/security/thread-access";
 import { THREAD_ID_PATTERN } from "@/lib/security/thread-credential";
 import { withRequestKey } from "@/lib/security/request-key";
@@ -77,6 +78,10 @@ export async function POST(req: Request) {
         if (visible.kind === "widget") widgets.push(visible.widget);
         writer.write({ type: "data-agent-event", data: visible, transient: true });
       });
+      // SECURITY: Stop must not leave a half-finished address change that looks pending; the card from before this request stays.
+      const proposalBefore = access.thread.pendingAddress?.proposalId;
+      const onStop = () => dropAddressFlowOnStop(access.thread, proposalBefore);
+      req.signal.addEventListener("abort", onStop, { once: true });
       try {
         const outcome = await withRequestKey(req, () => handleUserMessage(ctx, lastUserText(messages), selection));
         // While a consultant is in charge the agent stays silent: there is no text to stream.
@@ -101,6 +106,9 @@ export async function POST(req: Request) {
         writer.write({ type: "text-delta", id, delta: described.chatSentence });
         writer.write({ type: "text-end", id });
       } finally {
+        req.signal.removeEventListener("abort", onStop);
+        // The run may finish after Stop and create a draft or card late: clean up once more.
+        if (req.signal.aborted) onStop();
         unsubscribe();
       }
     },

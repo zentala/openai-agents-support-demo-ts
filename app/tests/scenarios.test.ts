@@ -102,6 +102,27 @@ describe("kb-unknown: the pattern forbids an affirmative claim, not a hedge", ()
   });
 });
 
+describe("escalation-next-step: the contact pattern forbids a promise, not a disclaimer", () => {
+  const pattern = new RegExp(scenarios.find((s) => s.id === "escalation-next-step")!.expect.replyNotMatches![0], "i");
+
+  it.each([
+    "I can't promise a time; the ticket does not guarantee that someone will contact you by email or phone.",
+    "I don't think a colleague will call you today.",
+    "We will never phone you without asking first.",
+  ])("a disclaimer is allowed: %s", (reply) => {
+    expect(pattern.test(reply)).toBe(false);
+  });
+
+  it.each([
+    "Someone will call you tomorrow.",
+    "A colleague is going to e-mail you today.",
+    "That does not take long. Someone will call you tomorrow.",
+    "No problem, someone will call you tomorrow.",
+  ])("a promise is caught: %s", (reply) => {
+    expect(pattern.test(reply)).toBe(true);
+  });
+});
+
 describe("evaluate: wave 3b expectations", () => {
   const tool = (name: string, result: unknown) => ev({ kind: "tool_output", agent: "A", tool: name, result });
 

@@ -89,4 +89,3 @@ that is tracked, and never print it.
 - **Docs follow code:** when the architecture changes, update [.plan/ARCH.md](.plan/ARCH.md)
   (including the impact log) and add or supersede an ADR. Link every new document from a parent.
 - **Do not edit** `examples/`. Commits use Conventional Commits; small and atomic.
-- Do not push, publish or spend model credits unless the owner asked.

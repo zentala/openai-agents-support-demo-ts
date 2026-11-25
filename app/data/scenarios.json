@@ -1159,7 +1159,7 @@
         "chat|conversation"
       ],
       "replyNotMatches": [
-        "(?:will (?!not\\b)|going to )[^.!?\\n]{0,90}(?:e-?mail|phone|call)",
+        "(?<!\\b(?:not|no|never|cannot|can['’]t|don['’]t|doesn['’]t|nie|nicht|kein\\w*)\\b[^.!?\\n,;]*)(?:will (?!(?:not|never)\\b)|going to )[^.!?\\n]{0,90}(?:e-?mail|phone|call)",
         "(?:within|in) \\d+ (?:minutes?|hours?|days?)"
       ]
     },

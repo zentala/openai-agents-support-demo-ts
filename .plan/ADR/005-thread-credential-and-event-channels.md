@@ -29,7 +29,7 @@ Option 2.
 - `POST /api/threads` creates the thread with a random id and answers with
   `nh_thread_<id>`: HMAC(`SESSION_SECRET`, threadId), httpOnly, `SameSite=Strict`.
   Chat, customer stream, photo upload and secure forms require it.
-- Customer events pass through `toCustomerEvent`. Only chat messages, takeover state and
+- Customer events pass through `toCustomerEvent`. Only chat messages, takeover state, ticket closing (`ticket_status`: ticket id and "resolved", nothing else) and
   widgets are allowed. The map is a `Record` over all event kinds, so a new kind does not
   compile until it is classified.
 - Hand-back notes use a `staff_instruction` inspector-only event and the guarded admin thread view.

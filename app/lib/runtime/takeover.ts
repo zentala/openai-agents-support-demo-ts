@@ -97,7 +97,7 @@ export function handBack(threadId: string, consultant: string, note = ""): Actio
   const text = redactSecrets(note.trim());
   result.thread.staffInstruction = text ? { text, consultant, updatedAt: new Date().toISOString() } : undefined;
   emitAgentEvent(threadId, { kind: "staff_instruction", instruction: result.thread.staffInstruction ?? null });
-  resolveTicketsForThread(threadId);
+  for (const ticketId of resolveTicketsForThread(threadId)) emitAgentEvent(threadId, { kind: "ticket_status", ticketId, status: "resolved" });
   result.thread.handedBackBy = consultant;
   // The customer's messages during the takeover sit in the history with no assistant answer of their
   // own. Without this note the agent would answer the oldest of them first after hand-back.

@@ -93,7 +93,7 @@ Screenshots saved in the ignored worktree directory `docs/screenshots/`:
 - `h15-customer-tab-1440.png` and `h15-customer-tab-390.png` — Customer tab, section icons, light empty states and export link in the shared Agent header.
 - `h15-d1-fallback-1440.png` and `h15-d1-fallback-390.png` — truthful blocked-claim fallback with the export link visible.
 
-At 390px, Playwright also measured the D7 field as visible, 40px high, with zero top/left border, a 1px bottom rule and no horizontal document overflow. The follow-up screenshot of the D7 field at 390px and an expanded Customer context screenshot timed out; do not treat those as captured. The 1440px rated conversation screenshot required by D7 is present.
+At 390px, Playwright also measured the D7 field as visible, 40px high, with zero top/left border, a 1px bottom rule and no horizontal document overflow. The D7 field at 390px was captured later (H17 follow-up, 2026-11-25): `h15-rated-conversation-390.png` sits next to the 1440px one, made by `scripts/smoke-d7-rating.mjs` with the console read endpoints answered from fixtures, no model call. Measured at 390 and 1440: field visible, 40px high, inside the viewport, bottom rule only, no horizontal overflow. The same screenshot shows the field squeezed to about 110px beside the "rated down by ..." label ([backlog](../backlog/rating-field-squeezed-on-phone.md)). The expanded Customer context screenshot still timed out; do not treat it as captured. The 1440px rated conversation screenshot required by D7 is present.
 
 ### Remaining delivery items
 
@@ -194,7 +194,7 @@ Playwright reviewed the local app at 1440px and 390px. The page ran at `http://1
 
 The verified-guest screenshot state used a temporary synthetic response for the Customer snapshot endpoint to inspect the rendered verified state; the route was removed afterward. API authorization, guest order scoping, masked email and verification labels are covered by the actual unit tests. The Playwright close summary reported 2 console errors and 0 warnings. One observed error was a 404 for `/favicon.ico`; the second console entry was not available in the captured output after the browser closed.
 
-The handoff requests a 1440px screenshot of D7's correction field. That field is only rendered under an agent reply in a consultant conversation. This browser session had no rated conversation, and I did not create one by sending another model request. Therefore the D7 field has source and automated-check coverage, but its dedicated screenshot is **NOT_CHECKED**.
+The handoff requests a 1440px screenshot of D7's correction field. That field is only rendered under an agent reply in a consultant conversation. This browser session had no rated conversation, and I did not create one by sending another model request. Therefore this session had only source and automated-check coverage. Resolved in the H17 follow-up (2026-11-25): both screenshots now exist (`h15-rated-conversation-1440.png`, `h15-rated-conversation-390.png`), rendered from the real console page with fixture responses for its two read endpoints; no model call. Status: 1440 and 390 CHECKED (screenshot plus measured geometry).
 
 ## Open questions
 

@@ -176,8 +176,8 @@ describe("replay: events emitted before the stream connected", () => {
 });
 
 describe("event visibility", () => {
-  it("customer-visible kinds are exactly chat messages, takeover state and widgets", () => {
-    expect([...CUSTOMER_EVENT_KINDS].sort()).toEqual(["chat_message", "takeover", "widget"]);
+  it("customer-visible kinds are exactly chat messages, takeover state, ticket closing and widgets", () => {
+    expect([...CUSTOMER_EVENT_KINDS].sort()).toEqual(["chat_message", "takeover", "ticket_status", "widget"]);
   });
 
   it("drops the operator note from a takeover event", () => {

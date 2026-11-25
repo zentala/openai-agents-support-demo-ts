@@ -159,6 +159,8 @@ export type AgentEventBody =
   | { kind: "approval_request"; approval: ApprovalRequest }
   | { kind: "approval_decision"; approvalId: string; toolName: string; approved: boolean; decidedBy: string }
   | { kind: "escalation"; ticketId: string; source: "agent" | "rule"; reason: string }
+  /** A ticket was closed (hand-back). Tickets still under staff review stay silent: no event means not closed. */
+  | { kind: "ticket_status"; ticketId: string; status: "resolved" }
   | { kind: "takeover"; status: HandlerStatus; consultant?: string; note?: string }
   /** Text pushed to the customer chat outside of a chat request (consultant reply, notice, resumed run). */
   | { kind: "chat_message"; entryId: string; role: "agent" | "consultant" | "system"; text: string; author?: string; sender?: SenderInfo; quickReplies?: QuickReplyWidget }

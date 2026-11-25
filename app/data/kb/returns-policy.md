@@ -1,6 +1,7 @@
 ---
 id: returns-policy
 title: Returns policy
+aliases: return goods, send back, how do I return an item; zwrot towaru, zwrócić, zwrot krzesła, oddać, odesłać, jak zwrócić; Rückgabe, Ware zurückgeben, zurücksenden
 ---
 You can return most items within 30 days of delivery, in the original packaging
 and unused. The 30 days start on the delivery date shown in your order, not the

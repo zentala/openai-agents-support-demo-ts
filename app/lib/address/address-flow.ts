@@ -59,6 +59,23 @@ export function publishAddressSlots(threadId: string, draft: AddressDraft, outco
   emitAgentEvent(threadId, { kind: "slots", form: "address-change", title: "Delivery address change", slots: slotViews(ADDRESS_SLOTS, draft), outcome });
 }
 
+/**
+ * The customer pressed Stop on a request. Nothing will happen for the address change it belonged to, so its
+ * draft goes and the slots card says so instead of looking pending. A confirmation card created by THIS request
+ * is withdrawn as well; `keepProposalId` is the card that already existed before the request and stays valid.
+ */
+export function dropAddressFlowOnStop(thread: Thread, keepProposalId?: string): void {
+  const draft = thread.memory.addressDraft;
+  const withdrawn = thread.pendingAddress && thread.pendingAddress.proposalId !== keepProposalId ? thread.pendingAddress : undefined;
+  if (!draft && !withdrawn) return;
+  delete thread.memory.addressDraft;
+  if (withdrawn) {
+    thread.pendingAddress = undefined;
+    emitAgentEvent(thread.threadId, { kind: "address_change", orderId: withdrawn.orderId, status: "cancelled", detail: "Stopped by the customer" });
+  }
+  publishAddressSlots(thread.threadId, draft ?? { orderId: withdrawn?.orderId, ...withdrawn?.newAddress }, "Stopped by the customer");
+}
+
 /** All slots filled: store the proposal on the thread and show the old-vs-new card. Nothing is changed yet. */
 export function proposeAddressChange(thread: Thread, draft: Address & { orderId: string }): OrderRule {
   const order = findOrderForCustomer(thread.customerId, draft.orderId);

@@ -8,7 +8,7 @@
 import { AgentPanel } from "@/components/agent-panel";
 import { CustomerView } from "@/components/customer-view";
 import { Workspace } from "@/components/workspace";
-import { contextFieldsOf, customerLanguageOf, handlerOf, openTicketOf, verifiedCustomerOf } from "@/lib/client/selectors";
+import { contextFieldsOf, customerLanguageOf, handlerOf, openTicketOf, resolvedTicketsOf, verifiedCustomerOf } from "@/lib/client/selectors";
 import { useSupportSession } from "@/lib/client/use-support-session";
 import { useScenarioPlayback } from "@/lib/client/use-scenario-playback";
 import { useVisitorKey } from "./visitor-key";
@@ -43,6 +43,7 @@ export function SupportDemo({ publicSessionSecret, publicDemo }: { publicSession
         lastEvent={session.events.at(-1)}
         handler={handlerOf(session.events)}
         openTicketId={openTicketOf(session.events)}
+        resolvedTicketIds={resolvedTicketsOf(session.events)}
         onCustomerChange={(id) => { scenario.clear(); void session.startFresh(id).catch(() => {}); }}
         onReset={() => { scenario.clear(); void session.startFresh(session.customer.id).catch(() => {}); }}
         onSend={session.send}

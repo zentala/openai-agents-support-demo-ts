@@ -172,9 +172,11 @@ export function addTicket(input: Omit<TicketRecord, "id" | "createdAt" | "status
 export const findOpenTicketForThread = (threadId: string): TicketRecord | undefined =>
   memory.tickets.find((t) => t.threadId === threadId && t.status === "open");
 
-/** A consultant handing the conversation back closes its tickets. */
-export function resolveTicketsForThread(threadId: string): void {
-  memory.tickets.filter((t) => t.threadId === threadId && !["manager_review", "consultant_complaint", "message_report", "answer_question"].includes(t.category ?? "")).forEach((t) => (t.status = "resolved"));
+/** A consultant handing the conversation back closes its tickets; review tickets stay open. Returns the closed ids. */
+export function resolveTicketsForThread(threadId: string): string[] {
+  const closing = memory.tickets.filter((t) => t.threadId === threadId && t.status === "open" && !["manager_review", "consultant_complaint", "message_report", "answer_question"].includes(t.category ?? ""));
+  closing.forEach((t) => (t.status = "resolved"));
+  return closing.map((t) => t.id);
 }
 
 export function addAudit(input: Omit<AuditRecord, "id">): AuditRecord {

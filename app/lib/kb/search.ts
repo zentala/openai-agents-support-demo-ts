@@ -43,14 +43,14 @@ async function embed(texts: string[]): Promise<number[][]> {
 
 async function chunkVectors(chunks: KbChunk[]): Promise<number[][]> {
   const cache = readCache();
-  const missing = chunks.filter((chunk) => !cache[contentHash(chunk.text)]);
+  const missing = chunks.filter((chunk) => !cache[contentHash(chunk.searchText)]);
   if (missing.length > 0) {
-    const vectors = await embed(missing.map((chunk) => chunk.text));
-    missing.forEach((chunk, i) => (cache[contentHash(chunk.text)] = vectors[i]));
+    const vectors = await embed(missing.map((chunk) => chunk.searchText));
+    missing.forEach((chunk, i) => (cache[contentHash(chunk.searchText)] = vectors[i]));
     mkdirSync(path.dirname(CACHE_FILE), { recursive: true });
     writeFileSync(CACHE_FILE, JSON.stringify(cache));
   }
-  return chunks.map((chunk) => cache[contentHash(chunk.text)]);
+  return chunks.map((chunk) => cache[contentHash(chunk.searchText)]);
 }
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
@@ -66,7 +66,7 @@ export async function searchKb(query: string): Promise<KbHit[]> {
       snippet: chunk.text,
       score: hybridScore(
         cosineSimilarity(queryVector, vectors[i]),
-        keywordScore(query, `${chunk.title} ${chunk.text}`),
+        keywordScore(query, chunk.searchText),
       ),
     }))
     .filter((hit) => hit.score >= MIN_SCORE)

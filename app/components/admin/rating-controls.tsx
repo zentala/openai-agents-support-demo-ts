@@ -19,7 +19,7 @@ const iconButton = "flex h-10 w-10 shrink-0 items-center justify-center rounded-
 export function RatingControls({ rated, disabled, onRate }: Props) {
   const [correction, setCorrection] = useState("");
   return (
-    <div className="mt-1 flex items-center gap-1" data-testid="rating-controls" data-rating={rated?.rating ?? "none"}>
+    <div className="mt-1 flex flex-wrap items-center gap-1 sm:flex-nowrap" data-testid="rating-controls" data-rating={rated?.rating ?? "none"}>
       <button
         aria-label="Rate answer good"
         data-testid="rate-up"
@@ -46,7 +46,7 @@ export function RatingControls({ rated, disabled, onRate }: Props) {
         value={correction}
         onChange={(e) => setCorrection(e.target.value)}
         placeholder="Correction (optional)"
-        className="h-10 min-w-0 flex-1 rounded-none border-0 border-b border-zinc-900/20 bg-transparent px-2 py-1 text-sm placeholder:text-gray-400 focus-visible:border-zinc-900/40 focus-visible:outline-none focus-visible:ring-0"
+        className="order-last h-10 min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-0 rounded-none border-0 border-b border-zinc-900/20 bg-transparent px-2 py-1 text-sm placeholder:text-gray-400 focus-visible:border-zinc-900/40 focus-visible:outline-none focus-visible:ring-0"
       />
       {rated && <span className="text-xs text-zinc-600">rated {rated.rating} by {rated.ratedBy}</span>}
     </div>

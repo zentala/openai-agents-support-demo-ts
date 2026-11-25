@@ -30,6 +30,8 @@ type Props = {
   handler: { status: HandlerStatus; consultant?: string };
   /** The ticket that is still open, if any (drives the ticket badge status). */
   openTicketId?: string;
+  /** Tickets the server reported closed. */
+  resolvedTicketIds?: string[];
   onCustomerChange: (customerId: string) => void;
   onReset: () => void;
   onSend: (text: string) => void;
@@ -54,7 +56,7 @@ export function CustomerView(props: Props) {
         </div>
       )}
       {handBackResult && <p data-testid="handback-result" role="status" className="px-4 py-1 text-center text-sm text-green-800">{handBackResult}</p>}
-      <MessageList messages={props.messages} busy={props.busy} allowQuickReplies={props.handler.status === "agent"} lastEvent={props.lastEvent} activeOrderId={props.activeOrderId} actions={props.actions} ticket={{ openTicketId: props.openTicketId, handler: props.handler.status }} onConcern={props.onConcern} onScenario={props.onScenario} scenarioLabel={props.scenarioLabel} />
+      <MessageList messages={props.messages} busy={props.busy} allowQuickReplies={props.handler.status === "agent"} lastEvent={props.lastEvent} activeOrderId={props.activeOrderId} actions={props.actions} ticket={{ openTicketId: props.openTicketId, resolvedTicketIds: props.resolvedTicketIds, handler: props.handler.status }} onConcern={props.onConcern} onScenario={props.onScenario} scenarioLabel={props.scenarioLabel} />
       <Composer key={props.draftScope} suggestion={props.suggestion} busy={props.busy} onSend={props.onSend} scenarios={<ScenarioBar busy={props.busy} onRun={props.onScenario} />} />
     </div>
   );

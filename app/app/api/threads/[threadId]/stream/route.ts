@@ -7,8 +7,8 @@
  *
  * SECURITY: two gates. 1) The thread's HMAC cookie (lib/security) - a guessable thread or customer id
  * is not enough, and a thread cannot be pre-subscribed because it must already exist. 2) Only
- * customer-visible events pass (lib/runtime/event-visibility.ts): chat messages, takeover state and
- * widgets. Tool calls, order data, KB hits, guardrail reasoning and trace ids stay on the inspector
+ * customer-visible events pass (lib/runtime/event-visibility.ts): chat messages, takeover state,
+ * widgets and ticket closing (id and status only). Tool calls, order data, KB hits, guardrail reasoning and trace ids stay on the inspector
  * channel (/api/admin/inspector/...). The browser removes duplicates by event id.
  */
 import { toCustomerEvent } from "@/lib/runtime/event-visibility";

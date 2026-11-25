@@ -55,6 +55,8 @@ function toRow(e: AgentEvent): Row {
       return { label: "Human decision", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `${e.toolName}: ${e.approved ? "approved" : "rejected"} by ${e.decidedBy}` };
     case "escalation":
       return { label: "Escalation", icon: <EventIcon kind={e.kind} className={ICON} />, summary: `ticket ${e.ticketId} opened by ${e.source === "rule" ? "escalation rule" : "agent"}: ${e.reason}`, tone: "text-amber-700" };
+    case "ticket_status":
+      return { label: "Ticket closed", icon: <EventIcon kind="escalation" className={ICON} />, summary: `ticket ${e.ticketId}: ${e.status}` };
     case "takeover":
       return { label: "Takeover", icon: <ProductIcon name={e.status === "human" ? "takeOver" : "handBack"} className={ICON} />, summary: e.note ?? (e.status === "human" ? `${e.consultant} took over` : `handed back to the agent by ${e.consultant}`) };
     case "chat_message":

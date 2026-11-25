@@ -3,7 +3,8 @@
  *
  * The event bus carries everything: tool arguments (order data, e-mail), knowledge-base hits, guardrail
  * reasoning, approval requests, trace ids, error details. A customer's browser must see none of that.
- * Only three kinds are customer-visible: chat messages, the "colleague joined/left" state, and widgets.
+ * Only these kinds are customer-visible: chat messages, the "colleague joined/left" state, widgets and
+ * ticket closing (id and status only).
  *
  * The map is typed as a `Record` over every event kind, so adding a new kind to `AgentEventBody`
  * does not compile until someone decides here whether a customer may see it.
@@ -37,6 +38,7 @@ const AUDIENCE: Record<AgentEvent["kind"], Audience> = {
   unbacked_claim_blocked: "inspector",
   widget: "customer",
   takeover: "customer",
+  ticket_status: "customer",
   chat_message: "customer",
 };
 

@@ -55,7 +55,7 @@ export function ConversationPane({ thread, ticketId, ticketNumber, consultant, a
         {thread.transcript.map((e) => (
           <div key={e.id} data-testid={`transcript-${e.role}`} className="flex w-full flex-col gap-1">
             <span className="text-xs text-zinc-600">{formatTime(e.ts)}</span>
-            <MessageContent text={e.text} sender={e.sender ?? senderForRole(e.role, e.author)} customer={e.role === "customer"} ticket={{ openTicketId: ticketId, handler: human ? "human" : "agent" }} />
+            <MessageContent text={e.text} sender={e.sender ?? senderForRole(e.role, e.author)} customer={e.role === "customer"} ticket={{ openTicketId: ticketId, resolvedTicketIds: ticketId || !ticketNumber ? [] : [ticketNumber], handler: human ? "human" : "agent" }} />
             {e.role === "agent" && e.sender?.kind !== "system" && (
               <RatingControls rated={thread.ratings[e.id]} disabled={acting} onRate={(rating, correction) => onRate(e.id, rating, correction)} />
             )}

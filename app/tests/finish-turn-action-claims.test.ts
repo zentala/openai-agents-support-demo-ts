@@ -98,6 +98,18 @@ describe("finishTurn action claim guard", () => {
     ]);
   });
 
+  it("streams the human-passed notice together with the blocked-claim line, not the line alone", async () => {
+    current.signals.guardrailTrips = 2;
+    model.run.mockResolvedValue(result([claim("refund")]));
+    const final = await finishTurn(current, context(), outcome("Your refund was approved.", [
+      { text: "Your refund was approved.", sender: { kind: "ai" } },
+    ]), observed, "request");
+    // `reply` is what app/api/chat/route.ts streams as the text part; it must carry every delivered message.
+    expect(final.reply).toBe(final.messages?.map((message) => message.text).join("\n\n"));
+    expect(final.reply).toContain("Sorry, I can't confirm that a refund was approved.");
+    expect(final.reply).toContain("consultant queue");
+  });
+
   it("checks the model reply carried in messages on the secure-form notice path", async () => {
     model.run.mockImplementation(async (_agent, text: string) => result(text.includes("consultant will contact") ? [claim("escalation", "will_happen")] : []));
     const ctx = context();

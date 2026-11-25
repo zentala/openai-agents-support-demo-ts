@@ -13,6 +13,8 @@ import { toChatMessage } from "@/lib/client/pushed-messages";
 import { withRequestKey } from "@/lib/security/request-key";
 import { finishTurn } from "@/lib/runtime/turn-finish";
 import { sessionContextOf } from "@/lib/runtime/session-context";
+import { openTicket } from "@/lib/runtime/tickets";
+import { resolvedTicketsOf } from "@/lib/client/selectors";
 import type { CustomerMessage } from "@/lib/message-kinds";
 import type { TicketContext } from "@/lib/client/ticket-status";
 
@@ -86,6 +88,27 @@ it("derives the ticket badge status from the live ticket and handler, not a fixe
   expect(badge({ openTicketId: "T-2002", handler: "agent" })).toContain(">waiting<");
   expect(badge({ openTicketId: "T-2002", handler: "human" })).toContain(">taken over<");
   expect(badge({ openTicketId: "T-2002", handler: "human" })).not.toContain(">waiting<");
-  expect(badge({ handler: "agent" })).toContain(">closed<");
-  expect(badge({ openTicketId: "T-2003", handler: "human" })).toContain(">closed<");
+  // After a hand-back the conversation drops its ticket, but the ticket is not closed until the server says so.
+  expect(badge({ handler: "agent" })).toContain(">in review<");
+  expect(badge({ openTicketId: "T-2003", handler: "human" })).toContain(">in review<");
+  expect(badge({ handler: "agent", resolvedTicketIds: ["T-2002"] })).toContain(">closed<");
+  expect(badge({ openTicketId: "T-2002", handler: "agent", resolvedTicketIds: ["T-2002"] })).toContain(">closed<");
+});
+
+it("a hand-back closes a plain ticket for the customer but keeps a review ticket in review", () => {
+  const closing = createThread("c-james");
+  const plain = openTicket({ customerId: "c-james", threadId: closing.threadId, traceId: "t", summary: "s", source: "rule", reason: "legal_or_gdpr" }).ticket;
+  expect(takeOverAndReply(closing.threadId, "Marta Nowak", "Hello.").ok).toBe(true);
+  expect(handBack(closing.threadId, "Marta Nowak").ok).toBe(true);
+  const resolved = () => readEventLog().filter(({ event }) => event.kind === "ticket_status").map(({ event }) => toCustomerEvent(event)).filter((event) => event?.kind === "ticket_status" && event.ticketId === plain.id);
+  expect(resolved()).toHaveLength(1);
+
+  const reviewing = createThread("c-james");
+  const review = openTicket({ customerId: "c-james", threadId: reviewing.threadId, traceId: "t", summary: "s", source: "rule", reason: "manager_review", category: "manager_review" }).ticket;
+  expect(takeOverAndReply(reviewing.threadId, "Marta Nowak", "Hello.").ok).toBe(true);
+  expect(handBack(reviewing.threadId, "Marta Nowak").ok).toBe(true);
+  const events = readEventLog().map(({ event }) => event);
+  expect(events.some((event) => event.kind === "ticket_status" && event.ticketId === review.id)).toBe(false);
+  expect(resolvedTicketsOf(events)).not.toContain(review.id);
+  expect(resolvedTicketsOf(events)).toContain(plain.id);
 });

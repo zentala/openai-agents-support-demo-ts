@@ -131,6 +131,9 @@ export async function finishTurn(
   }
 
   reply = await checkCustomerReply(thread, ctx, outcome, observed, messages, reply);
+  // A blocked claim replaces the whole reply, but the "Passed to a human" notice is still delivered in `messages`;
+  // the streamed text part must carry it too.
+  if (automaticallyEscalated) reply = messages.map((message) => message.text).join("\n\n");
 
   return deliverCustomerMessages(thread, outcome, observed, delivery, reply, messages, automaticallyEscalated);
 }

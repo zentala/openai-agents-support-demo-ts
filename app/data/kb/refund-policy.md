@@ -1,6 +1,7 @@
 ---
 id: refund-policy
 title: Refunds
+aliases: money back, when do I get my money; zwrot pieniędzy, zwrot środków, pieniądze, kiedy dostanę pieniądze; Rückerstattung, Geld zurück, wann bekomme ich mein Geld
 ---
 Refunds go back to the original payment method within 5 business days after we
 receive the returned item. The refund can never be higher than the price paid

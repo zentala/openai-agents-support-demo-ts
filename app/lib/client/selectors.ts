@@ -105,6 +105,10 @@ export function openTicketOf(events: AgentEvent[]): string | undefined {
   return event.kind === "escalation" ? event.ticketId : undefined;
 }
 
+/** Tickets the server reported closed. A ticket never reported stays open, e.g. one still in staff review. */
+export const resolvedTicketsOf = (events: AgentEvent[]): string[] =>
+  ofKind(events, "ticket_status").map((e) => e.ticketId);
+
 /** Run log events retain trace boundaries for grouping; activation-only bookkeeping stays hidden. */
 export const timelineOf = (events: AgentEvent[]): AgentEvent[] =>
   events.filter((e) => e.kind !== "agent_active");

@@ -67,6 +67,7 @@ async function layout(page, width) {
   if (width === 390) {
     const player = await page.locator(".view").boundingBox(), list = await page.locator("aside").boundingBox();
     check(player.y < list.y, "mobile player comes before scenario list");
+    check(player.y < 844, `mobile player starts in the first screen (top ${Math.round(player.y)}px)`);
   }
   const small = await page.locator("button:visible, select:visible, a.b:visible").evaluateAll(els => els.filter(el => {
     const r = el.getBoundingClientRect(); return r.width < 24 || r.height < 24;
