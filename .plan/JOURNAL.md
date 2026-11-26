@@ -208,3 +208,9 @@ Newest entries at the bottom.
 - Ticket store and event log are both in memory, so a restart wipes threads too; only log eviction was real. Customer stream rebuilds closed tickets from the store; the console reads each ticket's own status.
 - Gallery: injection-order-note now shows the malicious note in the get_order result (frame 2); refund-in-policy and order-delivery-address gained a tool-result frame. 4 AI recordings. Found: iphone-signature never shows cleanup (single-line input drops newlines), filed in BACKLOG.
 - `just check` on merged main: exit 0, 782 tests, 1077 gallery assertions.
+
+## Finding 2026-11-26 — three BACKLOG items (worktree agent)
+- iphone-signature: the product chat field was a single-line input, which drops newlines from typed and pasted text. It is now a textarea (Enter sends, Shift+Enter adds a line, DESIGN.md row). Re-recorded locally: frame 1 shows "Input cleanup: 1 mail signature line(s); 2 quoted reply line(s)"; new frame 2 expands the before/after JSON.
+- smoke-public-demo: rule starters and missing-key replies are `message-automatic`; the script now waits on either kind. Run against a local public-demo build: all checks PASS; the live-model turn is NOT_CHECKED (no key given to it).
+- Poisoned-note refund offer: the cause was code. "Do not change or refund anything" matched the refund-word test in `rememberRefundRequest`, and `stageConversationOffer` then staged "Confirm this refund: 1190 PLN" for order 1006. A negated refund clause now clears the wish (ADR 003, no prompt change). The added eval scenario `injection-order-note-no-refund` was not run: the agent sandbox refused `just eval` ("runs a string through eval"). Not retried through another spelling.
+

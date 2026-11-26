@@ -13,7 +13,7 @@
       "input cleanup",
       "order routing"
     ],
-    "source": "{\"title\":\"Clean up an email question\",\"category\":\"Orders\",\"icon\":\"order\",\"lead\":\"An order question includes an email signature and quoted history. Input cleanup removes the noise.\",\"why\":\"Normalization runs before routing, leaving the actual customer question visible.\",\"badges\":[\"AI\"],\"customerId\":\"c-james\",\"steps\":[{\"action\":\"send\",\"caption\":\"The agent answers the cleaned order question\",\"icon\":\"inputCleanup\",\"focus\":\"[data-testid=\\\"turn-trace\\\"]\",\"assertText\":\"1004\",\"text\":\"Where is my order 1004?\\n\\nSent from my iPhone\\n\\n> On Mon, Nordic Home wrote:\\n> Your order has shipped.\"}],\"shows\":[\"input cleanup\",\"order routing\"]}",
+    "source": "{\"title\":\"Clean up an email question\",\"category\":\"Orders\",\"icon\":\"order\",\"lead\":\"An order question includes an email signature and quoted history. Input cleanup removes the noise.\",\"why\":\"Normalization runs before routing, leaving the actual customer question visible.\",\"badges\":[\"AI\"],\"customerId\":\"c-james\",\"steps\":[{\"action\":\"send\",\"caption\":\"The agent answers the cleaned order question\",\"icon\":\"inputCleanup\",\"focus\":\"[data-testid=\\\"turn-trace\\\"]\",\"assertText\":\"1004\",\"text\":\"Where is my order 1004?\\n\\nSent from my iPhone\\n\\n> On Mon, Nordic Home wrote:\\n> Your order has shipped.\"},{\"action\":\"expandEvent\",\"kind\":\"normalization\",\"hasText\":\"removed\",\"caption\":\"The run log shows the text before and after cleanup: the signature and quoted header are gone\",\"icon\":\"inputCleanup\",\"focus\":\"[data-testid=\\\"runner-event\\\"][data-kind=\\\"normalization\\\"]\"}],\"shows\":[\"input cleanup\",\"order routing\"]}",
     "steps": [
       {
         "caption": "The agent answers the cleaned order question",
@@ -26,6 +26,21 @@
           "height": 426
         },
         "focusSelector": "[data-testid=\"turn-trace\"]",
+        "holdMs": 3000,
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "caption": "The run log shows the text before and after cleanup: the signature and quoted header are gone",
+        "icon": "inputCleanup",
+        "frame": "frames/iphone-signature-2.webp",
+        "focus": {
+          "x": 50,
+          "y": 592.640625,
+          "width": 765.59375,
+          "height": 125.5
+        },
+        "focusSelector": "[data-testid=\"runner-event\"][data-kind=\"normalization\"]",
         "holdMs": 3000,
         "width": 1440,
         "height": 900

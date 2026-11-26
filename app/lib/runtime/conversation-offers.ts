@@ -3,6 +3,7 @@ import { RunContext } from "@openai/agents";
 import { findOrderForCustomer, orderTotal, refundedSoFar } from "@/lib/data/store";
 import { offerReplyChoices } from "@/lib/tools/reply-choices";
 import type { SupportContext } from "@/lib/types";
+import { refundWish } from "./refund-negation";
 import { emitAgentEvent } from "./event-bus";
 import type { RunObservation } from "./run-observer";
 import type { RunOutcome } from "./run-support";
@@ -15,8 +16,15 @@ export function replyDecision(text: string): "yes" | "no" | undefined {
   if (/^(?:yes(?:,? please)?|tak(?:,? poprosz[eę])?|ja(?:,? bitte)?)[.!]?(?:\s+I confirm (?:those|these) refund details[.!]?)?\s*$/i.test(text.trim())) return "yes";
 }
 
+/**
+ * Remembers the customer's refund wish so code can offer the confirmation choices later.
+ * SECURITY: "do not refund anything" is the opposite wish; it must never start a refund offer (ADR 003:
+ * the decision lives in code, not in the model's reading of the sentence).
+ */
 export function rememberRefundRequest(thread: Thread, text: string): void {
-  if (/\b(?:refund|zwrot|refundacj\p{L}*|erstattung)\b/iu.test(text) || /\breturn\b.*\b(?:PLN|zł)\b/i.test(text)) thread.refundRequest = text;
+  const wish = refundWish(text);
+  if (wish === "withdrawn") delete thread.refundRequest;
+  else if (wish === "asked" || /\breturn\b.*\b(?:PLN|zł)\b/i.test(text)) thread.refundRequest = text;
 }
 
 function refundOffer(thread: Thread, ctx: SupportContext): ReplyOfferInput | undefined {

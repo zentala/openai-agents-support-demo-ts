@@ -35,10 +35,12 @@ page.on("request", (request) => requestedUrls.push(request.url()));
 const synthetic = "sk-" + "synthetic-browser-marker";
 const key = process.argv.includes("--icons-only") ? undefined : process.env.OPENAI_API_KEY;
 const check = (name, condition) => { assert(condition, name); console.log(`PASS ${name}`); };
+// Model replies render as message-assistant; rule starters and key errors are automatic steps (message-automatic).
+const lastReply = () => page.locator('[data-testid="message-assistant"], [data-testid="message-automatic"]').last();
 async function send(text) {
   await page.getByTestId("chat-input").fill(text);
   await page.getByTestId("chat-input").press("Enter");
-  await page.getByTestId("message-assistant").last().waitFor({ timeout: 120_000 });
+  await lastReply().waitFor({ timeout: 120_000 });
   await page.waitForFunction(() => !document.querySelector('[data-testid="working"]'), null, { timeout: 120_000 });
 }
 async function resetConversation() {
@@ -71,10 +73,10 @@ try {
   check("reset hidden from public visitors", await page.getByTestId("reset-demo-data").count() === 0);
   await page.keyboard.press("Escape");
   await send("I want to speak to a human");
-  check("rule starter works without a key", !/failed|Add your OpenAI key/.test(await page.getByTestId("message-assistant").last().innerText()));
+  check("rule starter works without a key", !/failed|Add your OpenAI key/.test(await lastReply().innerText()));
   await resetConversation();
   await send("Where is my order?");
-  check("missing key is visible in chat", (await page.getByTestId("message-assistant").last().innerText()).includes("Add your OpenAI key"));
+  check("missing key is visible in chat", (await lastReply().innerText()).includes("Add your OpenAI key"));
   // The inspector is a separate SSE connection and can arrive after the chat response.
   await page.getByTestId("workspace").getByText(/Add your OpenAI key/).first().waitFor();
   check("missing key is visible in Agent View", (await page.getByTestId("workspace").innerText()).includes("Add your OpenAI key"));
@@ -102,7 +104,7 @@ try {
     // SECURITY: no tracing, video, network dumps, screenshots or assertions containing the real key.
     await input.fill(key);
     await send("Hello, can you help me with Nordic Home orders?");
-    const answer = await page.getByTestId("message-assistant").last().innerText();
+    const answer = await lastReply().innerText();
     check("one live model turn answered", answer.length > 10 && !/request failed|rejected the key|EmptyModelOutput|blocked by/i.test(answer));
     check("real key absent from browser storage and URLs", await page.evaluate((marker) =>
       !JSON.stringify([Object.entries(localStorage), Object.entries(sessionStorage), document.cookie, location.href]).includes(marker), key)

@@ -1,5 +1,6 @@
 /** Categories drive a predictable menu; seeded scenarios remain available only to the eval runner. */
 import { expect, it } from "vitest";
+import rawScenarios from "@/data/scenarios.json";
 import { displayScenarioLabel, SCENARIO_CATEGORIES, scenarios, menuScenarios, scenarioSchema } from "@/lib/eval/scenarios";
 it("assigns every scenario a valid category and represents every domain group", () => {
   expect(new Set(scenarios.map((s) => s.category))).toEqual(new Set(SCENARIO_CATEGORIES));
@@ -11,8 +12,12 @@ it("assigns every scenario a valid category and represents every domain group", 
 });
 it("hides every seeded scenario and keeps ordinary scenarios", () => {
   expect(menuScenarios.length).toBeLessThan(scenarios.length);
-  expect(menuScenarios.every((s) => !s.seedRefunds && !s.seedSecrets && !s.staffNote)).toBe(true);
+  expect(menuScenarios.every((s) => !s.evalOnly && !s.seedRefunds && !s.seedSecrets && !s.staffNote)).toBe(true);
   expect(menuScenarios.some((s) => s.id === "human-request")).toBe(true);
+  expect(scenarios.some((s) => s.id === "injection-order-note-no-refund")).toBe(true);
+  expect(menuScenarios.some((s) => s.id === "injection-order-note-no-refund")).toBe(false);
+  const raw: { evalOnly?: boolean; gallery?: unknown }[] = rawScenarios;
+  expect(raw.filter((s) => s.evalOnly).every((s) => !s.gallery)).toBe(true);
 });
 it("removes fixture numbering without removing meaningful numbers in names", () => {
   expect(displayScenarioLabel("16 Asks for a human")).toBe("Asks for a human");

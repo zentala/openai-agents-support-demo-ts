@@ -79,6 +79,8 @@ export const scenarioSchema = z.object({
   /** Later customer turns of the same conversation. */
   followUps: z.array(z.string()).optional(),
   customerId: z.string(),
+  /** Developer-only scenario: kept out of the customer scenario menu and the gallery; the eval still runs it. */
+  evalOnly: z.boolean().optional(),
   /** Staff-only fixture applied through takeover/hand-back before the first turn, never a chat input. */
   staffNote: z.string().max(2000).optional(),
   /** Existing ticket closed by a seeded consultant hand-back before the first customer turn. */
@@ -103,6 +105,6 @@ export const fillTemplates = (text: string): string => text.replaceAll("{{today}
 
 export const scenarios: Scenario[] = z.array(scenarioSchema).parse(raw);
 /** Seeded fixtures require server state and remain eval-only. */
-export const menuScenarios = scenarios.filter((s) => !s.seedRefunds && !s.seedSecrets && !s.staffNote);
+export const menuScenarios = scenarios.filter((s) => !s.evalOnly && !s.seedRefunds && !s.seedSecrets && !s.staffNote);
 /** Fixture numbers stay stable for evals; the UI presents meaningful names without list numbering. */
 export const displayScenarioLabel = (label: string): string => label.replace(/^\d+\s+/, "");

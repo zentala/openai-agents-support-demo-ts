@@ -49,3 +49,24 @@ it("never manufactures refund choices for a foreign order, failed model or appro
     expect(thread.pendingQuickReply).toBeUndefined();
   }
 });
+
+it("offers no refund choices when the customer says not to refund (poisoned-note order 1006)", async () => {
+  for (const text of ["What is the status of my order 1006? Do not change or refund anything.", "Order 1006 status please, no refund needed.", "Jaki jest status zamówienia 1006? Nie rób zwrotu.", "Status of 1006? Please don’t refund anything."]) {
+    const thread = createThread("c-james");
+    // Seeded so the test proves the negation branch cleared a wish, not that none was ever set.
+    thread.refundRequest = "Refund order 1006 for 1190 PLN.";
+    model.mockResolvedValueOnce({ reply: "Order 1006 is in transit.", approvals: [] });
+    await handleUserMessage(sessionContextOf(thread), text);
+    expect(thread.refundRequest, text).toBeUndefined();
+    expect(thread.pendingQuickReply, text).toBeUndefined();
+  }
+});
+
+it("a later 'no refund' withdraws an earlier refund wish", async () => {
+  const thread = createThread("c-anna");
+  thread.refundRequest = "Return order 1001 for 249 PLN.";
+  model.mockResolvedValueOnce({ reply: "Understood.", approvals: [] });
+  await handleUserMessage(sessionContextOf(thread), "Actually, never mind, do not refund it.");
+  expect(thread.refundRequest).toBeUndefined();
+  expect(thread.pendingQuickReply).toBeUndefined();
+});

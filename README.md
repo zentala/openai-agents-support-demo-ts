@@ -28,7 +28,7 @@ Choose a UI example to start a fresh conversation, or pass stable IDs to `just e
 
 <!-- scenarios:generated:start -->
 
-All 59 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
+All 60 synthetic scenarios from [scenarios.json](app/data/scenarios.json), grouped by category.
 
 Steps count customer messages. Widget clicks and consultant decisions are additional actions. UI + eval examples appear in the start screen and Scenarios menu; eval-only examples require fixture setup.
 
@@ -148,7 +148,7 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 </details>
 
 <details>
-<summary>Security &amp; guardrails (8)</summary>
+<summary>Security &amp; guardrails (9)</summary>
 
 | Scenario | Stable ID | Steps | Availability |
 | --- | --- | --- | --- |
@@ -159,6 +159,7 @@ Steps count customer messages. Widget clicks and consultant decisions are additi
 | Ask an unrelated question | `off-topic` | 1 | UI + eval |
 | Type a card number in chat | `card-number` | 1 | UI + eval |
 | Ask for a relative's order | `social-engineering` | 1 | UI + eval |
+| Ask for the status of a poisoned-note order and say no refund | `injection-order-note-no-refund` | 1 | Eval only (developer check) |
 | Read an order note containing hidden instructions | `injection-order-note` | 1 | UI + eval |
 
 </details>

@@ -25,8 +25,8 @@ export function renderScenarioBlock(scenarios) {
       "| Scenario | Stable ID | Steps | Availability |", "| --- | --- | --- | --- |");
     for (const scenario of entries) {
       // Match the existing menu catalog's setup predicate without importing browser/model code.
-      const evalOnly = Boolean(scenario.seedRefunds || scenario.seedSecrets || scenario.staffNote);
-      lines.push(`| ${cell(scenario.label)} | \`${cell(scenario.id)}\` | ${1 + (scenario.followUps?.length ?? 0)} | ${evalOnly ? "Eval only (fixture setup)" : "UI + eval"} |`);
+      const evalOnly = Boolean(scenario.evalOnly || scenario.seedRefunds || scenario.seedSecrets || scenario.staffNote);
+      lines.push(`| ${cell(scenario.label)} | \`${cell(scenario.id)}\` | ${1 + (scenario.followUps?.length ?? 0)} | ${scenario.evalOnly ? "Eval only (developer check)" : evalOnly ? "Eval only (fixture setup)" : "UI + eval"} |`);
     }
     lines.push("", "</details>", "");
   }
