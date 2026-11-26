@@ -123,5 +123,7 @@ try {
   check(errors.length === 0, `console/page errors: ${JSON.stringify(errors)}`);
   check(failedRequests.length === 0, `failed assets: ${JSON.stringify(failedRequests)}`);
   const result = `PASS gallery: ${assertions} assertions, 14 scenarios at 1440/390, no external requests or model calls\n`;
-  console.log(result); writeFileSync(path.join(root, "research/H14-gallery-browser.txt"), result);
+  console.log(result);
+  mkdirSync(path.join(root, "research"), { recursive: true });
+  writeFileSync(path.join(root, "research/H14-gallery-browser.txt"), result);
 } finally { await browser?.close(); await server.close(); }

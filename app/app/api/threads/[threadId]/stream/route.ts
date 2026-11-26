@@ -21,5 +21,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ threadId
   const { threadId } = await params;
   const access = authorizeThread(req, threadId);
   if (!access.ok) return access.response;
-  return eventStreamResponse(req, threadId, toCustomerEvent);
+  return eventStreamResponse(req, threadId, toCustomerEvent, true);
 }

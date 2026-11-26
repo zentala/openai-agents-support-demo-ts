@@ -48,7 +48,7 @@ Option 2.
   console credentials in local staff mode. The accepted public-mode extension in
   [ADR 011](011-hosting-and-public-demo.md) requires that browser's signed thread cookie
   before replay/subscription; an optional console password never grants foreign-thread access.
-- A new subscriber first receives earlier events from the event log (fixes a race found by
+- A new customer subscriber first receives its closed tickets rebuilt from the ticket store (the bounded event log forgets old `ticket_status` events), then earlier events from the event log (fixes a race found by
   the browser smoke).
 - Inspector events carry an optional server-created turn identifier from the event bus's local async
   scope. Paused approval requests save that identifier; decisions and resumed runs restore its scope,

@@ -122,7 +122,7 @@ Allowlist: [app/lib/runtime/event-visibility.ts](../app/lib/runtime/event-visibi
 (a `Record` over every event kind, so a new kind does not compile until it is classified).
 The thread cookie is HMAC-signed, httpOnly, `SameSite=Strict`
 ([app/lib/security/thread-credential.ts](../app/lib/security/thread-credential.ts)).
-A new SSE subscriber first receives the thread's earlier events from the event log.
+A new customer SSE subscriber first receives the thread's closed tickets as `ticket_status` events built from the ticket store (the event log forgets old events, the store does not), then the earlier events from the event log.
 See [ADR 005](ADR/005-thread-credential-and-event-channels.md).
 
 ## Consultant console
@@ -240,3 +240,4 @@ when there is one.
 | 2026-11-19 | Diagnostics export is protected by `GET /api/admin/inspector/[threadId]/export` | Uses inspector authorization and retains full thread events while masking secrets | [005](ADR/005-thread-credential-and-event-channels.md), [006](ADR/006-sensitive-data-secure-forms.md) |
 | 2026-11-19 | Action-claim guard now requires an open thread ticket and rejects invented recipient claims; prompts receive code-derived ticket state and consultant hand-back identity. | Agent claims distinguish queue, takeover and closed tickets; consultant complaints can open a categorized ticket after the customer agrees. | [003](ADR/003-business-rules-in-tool-code.md), [004](ADR/004-human-in-the-loop.md) |
 | 2026-11-25 | Customer ticket badge follows the ticket: new customer-visible `ticket_status` event (id + "resolved") sent on hand-back; "in review" until then. Stop on a chat request drops the address draft (`dropAddressFlowOnStop`). | Event carries no operator text; review tickets stay silent so the customer sees "in review", not "closed". Kind added to the typed audience map. | [005](ADR/005-thread-credential-and-event-channels.md) |
+| 2026-11-26 | Stream replay re-announces closed tickets from the ticket store; `ThreadView.tickets` lists every ticket of a conversation with its own status; the console badge uses it. | The 5000-event log evicts; tickets do not. Customer channel shape unchanged (same event, id + "resolved" only). | [005](ADR/005-thread-credential-and-event-channels.md) |

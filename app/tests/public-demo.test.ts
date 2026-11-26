@@ -61,7 +61,7 @@ it("lets a deterministic starter work without a key and reports missing keys in 
   expect(free.failed).toBeUndefined();
   const missing = await withRequestKey(request(), () => handleUserMessage(makeContext(), "Where is my order?"));
   expect(missing.reply).toContain("Add your OpenAI key");
-  expect(readEventLog().some(({ event }) => event.kind === "error" && event.message === "Add your OpenAI key")).toBe(true);
+  expect(readEventLog().some(({ event }) => event.kind === "error" && event.message === "Add your OpenAI key above to talk to the assistant")).toBe(true);
 });
 
 it("keeps explicit error types when a production bundle minifies constructor names", () => {

@@ -49,6 +49,13 @@ export async function act(page, step) {
     await page.getByRole("tab", { name: "Agent", exact: true }).click();
     await page.locator('[data-testid="approval-card"][data-status="approved"]').waitFor();
     await settle(page);
+  } else if (step.action === "expandEvent") {
+    // Open one run-log row (the Agent View inspector) so its full JSON, e.g. a tool result, is readable.
+    const row = page.locator(`[data-testid="runner-event"][data-kind="${step.kind}"]`).filter({ hasText: step.hasText }).last();
+    await row.scrollIntoViewIfNeeded();
+    await row.getByRole("button").click();
+    // Centre the JSON so its last lines (the order note) are not cut off by the run-log scroll box.
+    await row.locator("pre").evaluate(el => el.scrollIntoView({ block: "center" }));
   } else if (step.action === "confirmAddress") {
     await test(page, "address-confirm-yes").last().click();
     await page.locator('[data-testid="runner-event"][data-kind="address_change"]').filter({ hasText: "applied" }).last().waitFor();

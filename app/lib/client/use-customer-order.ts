@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { AgentEvent, CustomerOrderView } from "@/lib/types";
 import type { ThreadView } from "@/lib/admin/types";
 import { adminResponse } from "./admin-response";
+import { fetchWithRetry } from "./fetch-retry";
 
 export function customerOrderRevision(events: AgentEvent[], replySent: boolean): string {
   const latest = events.filter((event) => ["context_update", "verification", "address_change", "approval_decision", "chat_message"].includes(event.kind)).at(-1);
@@ -18,7 +19,7 @@ export function useCustomerOrder(threadId: string | null, revision: string) {
     if (!threadId) return;
     const controller = new AbortController();
     let active = true;
-    void fetch(`/api/admin/threads/${encodeURIComponent(threadId)}`, { cache: "no-store", signal: controller.signal })
+    void fetchWithRetry(`/api/admin/threads/${encodeURIComponent(threadId)}`, { cache: "no-store", signal: controller.signal })
       .then(adminResponse<ThreadView>)
       .then((view) => { if (active) setSnapshot({ key: requestKey, data: view.customerOrder }); })
       .catch((error: unknown) => {

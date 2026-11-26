@@ -46,6 +46,8 @@ export type ThreadView = {
   /** Keyed by transcript entry id. */
   ratings: Record<string, RatingView>;
   staffLockouts: string[];
+  /** Every ticket of this conversation with its own status, oldest first. */
+  tickets: { id: string; status: "open" | "resolved" }[];
 };
 
 /** Body of POST /api/admin/actions. The route validates it with zod. */

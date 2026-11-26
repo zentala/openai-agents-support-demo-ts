@@ -11,9 +11,10 @@ export async function captureKeyIcons({ page, check }) {
     const clear = page.getByRole("button", { name: "Clear", exact: true });
     await clear.focus();
     check(`h13 R1: public ${width}px Clear uses its registry icon`, await clear.locator('[data-icon="clear"]').count() === 1);
-    check(`h13 R1: public ${width}px key and Clear remain aligned at 40px`, await field.evaluate((element) => {
-      const a = element.getBoundingClientRect(), b = element.nextElementSibling.getBoundingClientRect();
-      return a.height === 40 && b.height === 40 && a.top === b.top;
+    check(`h13 R1: public ${width}px key group and Clear are one 40px frame, no gap`, await field.evaluate((element) => {
+      const frame = element.closest('[data-testid="visitor-key-group"]').getBoundingClientRect();
+      const input = element.getBoundingClientRect(), button = element.closest('[data-testid="visitor-key-group"]').querySelector("button").getBoundingClientRect();
+      return frame.height === 40 && input.height >= 38 && button.height >= 38 && Math.abs(input.right - button.left) <= 1;
     }));
     await clear.click();
     check(`h13 R1: public ${width}px real Clear removes the synthetic tab input`, await field.inputValue() === "");

@@ -34,7 +34,8 @@ export function describeError(error: unknown): DescribedError {
   return {
     errorType,
     message: detail ? `${message} (${detail})` : message,
-    chatSentence: `Sorry, the request failed with ${errorType}: ${message}`,
+    // The client turns a VisitorKeyRequired sentence into a click target that focuses the key field.
+    chatSentence: errorType === "VisitorKeyRequired" ? `${errorType}: ${message}` : `Sorry, the request failed with ${errorType}: ${message}`,
   };
 }
 

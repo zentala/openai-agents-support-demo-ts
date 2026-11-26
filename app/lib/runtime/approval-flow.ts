@@ -37,7 +37,7 @@ async function decideAndResume(request: ApprovalRequest, approved: boolean, deci
   const { approvalId } = request;
   // SECURITY: refuse before consuming the decision; the consultant supplies their own request key.
   try { requestApiKey(); } catch {
-    const message = "Add your OpenAI key to resume this approval";
+    const message = "Add your OpenAI key above to resume this approval";
     emitAgentEvent(request.threadId, { kind: "error", errorType: "VisitorKeyRequired", message, where: "approval resume" });
     return { ok: false, errorType: "VisitorKeyRequired", message };
   }

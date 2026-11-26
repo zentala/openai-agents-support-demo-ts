@@ -5,7 +5,8 @@
  * A conversation has at most one OPEN ticket. A second request (the model escalates after a rule
  * already did) returns the existing ticket instead of flooding the queue with duplicates.
  */
-import { addTicket, findOpenTicketForThread, type TicketRecord } from "@/lib/data/store";
+import { addTicket, findOpenTicketForThread, listTicketsForThread, type TicketRecord } from "@/lib/data/store";
+import type { AgentEvent } from "@/lib/types";
 import { emitAgentEvent } from "./event-bus";
 import { redactValue } from "@/lib/security/request-key";
 
@@ -26,4 +27,18 @@ export function openTicket(input: OpenTicketInput): { ticket: TicketRecord; crea
   const ticket = addTicket(redactValue(input));
   emitAgentEvent(input.threadId, { kind: "escalation", ticketId: ticket.id, source: input.source, reason: input.reason });
   return { ticket, created: true };
+}
+
+/**
+ * The closed tickets of a conversation as `ticket_status` events, built from the ticket store.
+ *
+ * The event log is bounded and forgets old events, the ticket store does not. A new stream
+ * subscriber gets these first, so a closed ticket stays closed after its event was evicted.
+ * Tickets whose event is still in the log (`loggedTicketIds`) are skipped to avoid a duplicate row.
+ * SECURITY: only ticket id and status, the same shape as the live event (ADR 005).
+ */
+export function resolvedTicketEvents(threadId: string, loggedTicketIds: ReadonlySet<string>): AgentEvent[] {
+  return listTicketsForThread(threadId)
+    .filter((t) => t.status === "resolved" && !loggedTicketIds.has(t.id))
+    .map((t) => ({ id: `ticket-status:${t.id}`, ts: Date.now(), kind: "ticket_status", ticketId: t.id, status: "resolved" }));
 }

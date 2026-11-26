@@ -169,6 +169,9 @@ export function addTicket(input: Omit<TicketRecord, "id" | "createdAt" | "status
   return record;
 }
 
+/** Every ticket of one conversation, oldest first. */
+export const listTicketsForThread = (threadId: string): TicketRecord[] => memory.tickets.filter((t) => t.threadId === threadId);
+
 export const findOpenTicketForThread = (threadId: string): TicketRecord | undefined =>
   memory.tickets.find((t) => t.threadId === threadId && t.status === "open");
 

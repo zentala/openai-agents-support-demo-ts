@@ -11,7 +11,7 @@ export function withRequestKey<T>(request: Request, work: () => T): T {
 
 export class VisitorKeyRequired extends Error {
   constructor() {
-    super("Add your OpenAI key");
+    super("Add your OpenAI key above to talk to the assistant");
     this.name = "VisitorKeyRequired";
   }
 }

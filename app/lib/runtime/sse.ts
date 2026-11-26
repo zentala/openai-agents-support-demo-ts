@@ -14,6 +14,7 @@
  */
 import type { AgentEvent } from "@/lib/types";
 import { readEventLog, subscribeToThread } from "./event-bus";
+import { resolvedTicketEvents } from "./tickets";
 
 const HEARTBEAT_MS = 15_000;
 
@@ -21,6 +22,8 @@ export function eventStreamResponse(
   request: Request,
   threadId: string,
   project: (event: AgentEvent) => AgentEvent | undefined,
+  /** Customer channel only: re-announce closed tickets from the ticket store (the inspector reads ticket status from the thread view). */
+  announceClosedTickets = false,
 ): Response {
   const encoder = new TextEncoder();
   let cleanup = () => {};
@@ -32,7 +35,11 @@ export function eventStreamResponse(
         if (visible) send(`data: ${JSON.stringify(visible)}\n\n`);
       };
       // Replay, then subscribe: both run synchronously, so no event can fall between them.
-      for (const logged of readEventLog()) if (logged.threadId === threadId) deliver(logged.event);
+      const logged = readEventLog().filter((entry) => entry.threadId === threadId);
+      // The log forgets old events; the ticket store does not, so closed tickets are re-announced from it.
+      const loggedTicketIds = new Set(logged.flatMap(({ event }) => (event.kind === "ticket_status" ? [event.ticketId] : [])));
+      if (announceClosedTickets) resolvedTicketEvents(threadId, loggedTicketIds).forEach(deliver);
+      logged.forEach(({ event }) => deliver(event));
       const unsubscribe = subscribeToThread(threadId, deliver);
       // A comment line keeps proxies from closing an idle connection.
       const heartbeat = setInterval(() => send(": keep-alive\n\n"), HEARTBEAT_MS);

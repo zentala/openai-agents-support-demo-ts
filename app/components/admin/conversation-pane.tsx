@@ -38,6 +38,8 @@ export function ConversationPane({ thread, ticketId, ticketNumber, consultant, a
   const handler = thread.takeover.status === "human" ? thread.takeover.consultant : undefined;
   const human = handler !== undefined;
   const mine = handler === consultant;
+  // Each ticket shows its own status from the ticket store, not only the newest one.
+  const resolvedTicketIds = thread.tickets.filter((t) => t.status === "resolved").map((t) => t.id);
   return (
     <div className="flex min-w-0 flex-1 flex-col rounded-xl bg-white shadow-sm" data-testid="conversation-pane" data-handler={human ? "human" : "agent"}>
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 p-3">
@@ -55,7 +57,7 @@ export function ConversationPane({ thread, ticketId, ticketNumber, consultant, a
         {thread.transcript.map((e) => (
           <div key={e.id} data-testid={`transcript-${e.role}`} className="flex w-full flex-col gap-1">
             <span className="text-xs text-zinc-600">{formatTime(e.ts)}</span>
-            <MessageContent text={e.text} sender={e.sender ?? senderForRole(e.role, e.author)} customer={e.role === "customer"} ticket={{ openTicketId: ticketId, resolvedTicketIds: ticketId || !ticketNumber ? [] : [ticketNumber], handler: human ? "human" : "agent" }} />
+            <MessageContent text={e.text} sender={e.sender ?? senderForRole(e.role, e.author)} customer={e.role === "customer"} ticket={{ openTicketId: ticketId, resolvedTicketIds, handler: human ? "human" : "agent" }} />
             {e.role === "agent" && e.sender?.kind !== "system" && (
               <RatingControls rated={thread.ratings[e.id]} disabled={acting} onRate={(rating, correction) => onRate(e.id, rating, correction)} />
             )}

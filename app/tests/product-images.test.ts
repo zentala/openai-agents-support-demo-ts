@@ -70,7 +70,7 @@ it("Agent View and consultant rows use only the server's owned selection, with n
   const render = () => {
     const view = customerOrderOf(thread);
     const consultant: ThreadView = { threadId: thread.threadId, customerId: thread.customerId, customerName: "James",
-      traceId: thread.traceId, traceUrl: "", takeover: thread.takeover, transcript: [], ratings: {}, staffLockouts: [], customerOrder: view };
+      traceId: thread.traceId, traceUrl: "", takeover: thread.takeover, transcript: [], ratings: {}, staffLockouts: [], tickets: [], customerOrder: view };
     return [renderToStaticMarkup(createElement(CustomerOrderDetails, { view })),
       renderToStaticMarkup(createElement(ConversationPane, { thread: consultant, consultant: "Marta", acting: false,
         onHandBack: async () => true, onReply: async () => ({ ok: true as const }), onRate: () => {} }))];

@@ -78,12 +78,18 @@ try {
   // The inspector is a separate SSE connection and can arrive after the chat response.
   await page.getByTestId("workspace").getByText(/Add your OpenAI key/).first().waitFor();
   check("missing key is visible in Agent View", (await page.getByTestId("workspace").innerText()).includes("Add your OpenAI key"));
-  check("production error type remains readable", (await page.getByTestId("workspace").innerText()).includes("VisitorKeyRequired"));
+  await page.getByTestId("messages").getByTestId("key-required-action").first().click();
+  check("clicking the missing-key error focuses and highlights the key field",
+    await input.evaluate((element) => document.activeElement === element) && await page.getByTestId("visitor-key-group").getAttribute("data-highlighted") === "true");
+  check("production error type remains readable",(await page.getByTestId("workspace").innerText()).includes("VisitorKeyRequired"));
   for (const [width, height] of [[1440, 1000], [1024, 1000], [768, 1000], [390, 1000], [390, 844]]) {
     await page.setViewportSize({ width, height });
     check(`no horizontal overflow at ${width}`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    const heights = await input.evaluate((element) => [element.getBoundingClientRect().height, element.nextElementSibling.getBoundingClientRect().height]);
-    check(`key controls aligned at ${width}`, heights.every((height) => height === 40));
+    const heights = await input.evaluate((element) => {
+      const group = element.closest('[data-testid="visitor-key-group"]');
+      return [group.getBoundingClientRect().height, group.querySelector("button").getBoundingClientRect().height + 2];
+    });
+    check(`key group and Clear share one 40px frame at ${width}`, heights.every((height) => height === 40));
     if (width < 1024) check(`message viewport usable at ${width}x${height}`,
       await page.getByTestId("messages").evaluate((element) => element.clientHeight >= 160));
     const label = height === 1000 ? width : `${width}x${height}`;

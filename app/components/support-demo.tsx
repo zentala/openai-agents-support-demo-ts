@@ -15,7 +15,7 @@ import { useVisitorKey } from "./visitor-key";
 
 export function SupportDemo({ publicSessionSecret, publicDemo }: { publicSessionSecret: boolean; publicDemo: boolean }) {
   const session = useSupportSession();
-  const { headers } = useVisitorKey();
+  const { headers, key, focusKeyField } = useVisitorKey();
   const scenario = useScenarioPlayback(session);
 
   // A guest who passed verification is that customer from then on (the server rebinds the thread).
@@ -46,7 +46,7 @@ export function SupportDemo({ publicSessionSecret, publicDemo }: { publicSession
         resolvedTicketIds={resolvedTicketsOf(session.events)}
         onCustomerChange={(id) => { scenario.clear(); void session.startFresh(id).catch(() => {}); }}
         onReset={() => { scenario.clear(); void session.startFresh(session.customer.id).catch(() => {}); }}
-        onSend={session.send}
+        onSend={(...args: Parameters<typeof session.send>) => { if (publicDemo && !key) focusKeyField(); session.send(...args); }}
         onConcern={async (entryId, kind, reason) => {
           if (!session.threadId) return "Could not submit: no conversation is selected.";
           try {

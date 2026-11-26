@@ -3,6 +3,8 @@ import { Icon } from "@/components/icon";
 import type { CustomerMessage } from "@/lib/message-kinds";
 import { ticketBadgeStatus, type TicketContext } from "@/lib/client/ticket-status";
 import { CitationText } from "./kb-sources";
+import { KeyRequiredButton } from "./visitor-key";
+import { isKeyRequiredText } from "@/lib/client/key-required";
 import { useState } from "react";
 
 export function MessageContent({ text, sender, customer = false, ticket, entryId, onConcern }: CustomerMessage & { customer?: boolean; ticket?: TicketContext; entryId?: string; onConcern?: (entryId: string, kind: "report" | "question", reason: string) => Promise<string> }) {
@@ -18,7 +20,7 @@ export function MessageContent({ text, sender, customer = false, ticket, entryId
     </span>}
     <div data-testid={customer ? "message-user" : human ? "message-consultant" : "message-assistant"}
       className={`max-w-[85%] whitespace-pre-wrap text-base text-zinc-900 ${customer ? "rounded-2xl bg-gray-100 px-3 py-2" : human ? "rounded-2xl bg-emerald-100 px-3 py-2" : "py-2"}`}>
-      {customer ? text : <CitationText text={text} />}
+      {customer ? text : isKeyRequiredText(text) ? <KeyRequiredButton>{text}</KeyRequiredButton> : <CitationText text={text} />}
     </div>
     {entryId && onConcern && (sender.kind === "ai" || human) && <MessageConcern entryId={entryId} onConcern={onConcern} />}
   </div>;
@@ -59,6 +61,6 @@ function AutomaticStep({ text, sender, ticket }: CustomerMessage & { ticket?: Ti
       </span>}
       <span className="ml-auto inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-gray-200 bg-gray-100 px-1.5 text-xs leading-5 text-zinc-600"><Icon name="automaticStep" aria-hidden="true" className="size-3" />Automatic step</span>
     </div>
-    <p className="min-w-0 whitespace-pre-wrap wrap-anywhere text-zinc-600">{text}</p>
+    <p className="min-w-0 whitespace-pre-wrap wrap-anywhere text-zinc-600">{isKeyRequiredText(text) ? <KeyRequiredButton>{text}</KeyRequiredButton> : text}</p>
   </div>;
 }

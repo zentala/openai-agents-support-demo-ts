@@ -7,6 +7,8 @@
 import { Icon } from "@/components/icon";
 import type { AgentEvent } from "@/lib/types";
 import { PanelSection } from "./panel-section";
+import { KeyRequiredButton } from "./visitor-key";
+import { KEY_REQUIRED_TYPE } from "@/lib/client/key-required";
 import { Card, CardContent } from "./ui/card";
 
 type ErrorEvent = Extract<AgentEvent, { kind: "error" }>;
@@ -22,6 +24,7 @@ export function ErrorsSection({ errors }: { errors: ErrorEvent[] }) {
               <p className="font-mono font-semibold text-red-700">{e.errorType}</p>
               <p className="break-words text-zinc-800">{e.message}</p>
               <p className="text-xs text-zinc-600">where: {e.where}</p>
+              {e.errorType === KEY_REQUIRED_TYPE && <KeyRequiredButton className="mt-1">Add your OpenAI key in the key field</KeyRequiredButton>}
             </CardContent>
           </Card>
         ))}

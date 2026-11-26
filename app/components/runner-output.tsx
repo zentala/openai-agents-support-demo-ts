@@ -11,6 +11,8 @@ import { PanelSection } from "./panel-section";
 import { Card, CardContent } from "./ui/card";
 import { runLogGroups, type RunLogGroup } from "@/lib/client/run-log";
 import { EventIcon, ProductIcon } from "./product-icon";
+import { KeyRequiredButton } from "./visitor-key";
+import { KEY_REQUIRED_TYPE } from "@/lib/client/key-required";
 
 const ICON = "h-4 w-4 text-zinc-600";
 
@@ -76,7 +78,8 @@ function EventRow({ event }: { event: AgentEvent }) {
   const [open, setOpen] = useState(false);
   const row = toRow(event);
   return (
-    <div className="flex items-start gap-2" data-testid="runner-event" data-kind={event.kind}>
+    <div className="flex flex-wrap items-start gap-2" data-testid="runner-event" data-kind={event.kind}>
+      {event.kind === "error" && event.errorType === KEY_REQUIRED_TYPE && <div className="order-last w-full text-sm"><KeyRequiredButton>Add your OpenAI key in the key field</KeyRequiredButton></div>}
       <div className="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
         {row.icon}
         <span className="whitespace-nowrap">{row.label}</span>

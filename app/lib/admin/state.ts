@@ -1,7 +1,7 @@
 /**
  * Builds the JSON the consultant console reads. Server only: it reads the in-memory stores.
  */
-import { getCustomer, listAudit, listMessageReports, listRatings, listTickets } from "@/lib/data/store";
+import { getCustomer, listAudit, listMessageReports, listRatings, listTickets, listTicketsForThread } from "@/lib/data/store";
 import { listPendingApprovals } from "@/lib/runtime/approvals";
 import { readEventLog } from "@/lib/runtime/event-bus";
 import { getThread } from "@/lib/runtime/threads";
@@ -71,5 +71,6 @@ export function buildThreadView(threadId: string, request?: Request): ThreadView
     customerOrder: customerOrderOf(thread),
     ratings,
     staffLockouts: thread.staffLockouts ?? [],
+    tickets: listTicketsForThread(threadId).map((t) => ({ id: t.id, status: t.status })),
   };
 }
